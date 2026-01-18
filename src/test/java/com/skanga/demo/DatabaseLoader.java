@@ -8,6 +8,7 @@ public class DatabaseLoader {
 
     // Database type detection
     public enum DatabaseType {
+        HSQLDB("hsqldb"),
         MYSQL("mysql"),
         ORACLE("oracle"),
         SQLITE("sqlite"),
@@ -31,40 +32,22 @@ public class DatabaseLoader {
     private static final String CREATE_TABLES_SUFFIX = ".sql";
     private static final String DATA_SUFFIX = "-data.sql";
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws SQLException, IOException {
         //String jdbcUrl = "jdbc:h2:mem:testdb";    // In-Memory Database (Recommended for Testing)
         //String jdbcUrl = "jdbc:h2:C:/Users/skanga/mydb";
         //String jdbcUrl = "jdbc:sqlite:memory";      // In-Memory Database (Recommended for Testing)
-        String jdbcUrl = "jdbc:sqlite:C:/Users/skanga/testdb.db";
+        String jdbcUrl = "jdbc:hsqldb:file:~/DB/testdb.db";
         String user = "sa";
         String password = "";
-        String schema = "invoices"; // Default schema name - Load *.sql from src/test/resources/<schema>
-        //String schema = "sqltutorial.org";
+        //String schema = "invoices"; // Default schema name - Load *.sql from src/test/resources/<schema>
+        String schema = "sqltutorial.org";
 
         // Parse command line arguments for schema
         if (args.length > 0) {
             schema = args[0];
         }
 
-        try (Connection conn = DriverManager.getConnection(jdbcUrl, user, password)) {
-            DatabaseType dbType = detectDatabaseType(conn);
-            System.out.println("Detected database: " + dbType);
-            System.out.println("Using schema: " + schema);
-
-            conn.setAutoCommit(false);
-            try {
-                dropTables(conn, schema);
-                createTables(conn, dbType, schema);
-                populateData(conn, dbType, schema);
-                conn.commit();
-                System.out.println("Database setup complete for schema: " + schema);
-            } catch (Exception e) {
-                conn.rollback();
-                throw e;
-            }
-        } catch (SQLException | IOException e) {
-            e.printStackTrace();
-        }
+        setupDatabase(jdbcUrl, user, password, schema);
     }
 
     /**
@@ -102,6 +85,8 @@ public class DatabaseLoader {
             return DatabaseType.SQLITE;
         } else if (url.contains("h2") || productName.contains("h2")) {
             return DatabaseType.H2;
+        } else if (url.contains("hsqldb") || productName.contains("hsqldb")) {
+            return DatabaseType.HSQLDB;
         } else if (url.contains("derby") || productName.contains("derby")) {
             return DatabaseType.DERBY;
         } else if (url.contains("postgresql") || productName.contains("postgresql")) {
@@ -241,7 +226,7 @@ public class DatabaseLoader {
         }
 
         // Add the last statement if it doesn't end with semicolon
-        if (current.length() > 0) {
+        if (!current.isEmpty()) {
             statements.add(current.toString().trim());
         }
 

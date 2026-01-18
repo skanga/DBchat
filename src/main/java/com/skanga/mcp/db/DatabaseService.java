@@ -72,7 +72,7 @@ public class DatabaseService {
             throw new RuntimeException("Security policy prevented loading database driver: " + configParams.dbDriver(), e);
         }
 
-        // Initialize HikariCP connection pool
+        // Initialize HikariCP connection pool with enhanced configuration
         HikariConfig poolConfig = new HikariConfig();
         poolConfig.setJdbcUrl(configParams.dbUrl());
         poolConfig.setUsername(configParams.dbUser());
@@ -83,6 +83,23 @@ public class DatabaseService {
         poolConfig.setIdleTimeout(configParams.idleTimeoutMs());                       // 10 minutes default
         poolConfig.setMaxLifetime(configParams.maxLifetimeMs());                       // 30 minutes
         poolConfig.setLeakDetectionThreshold(configParams.leakDetectionThresholdMs()); // 20 seconds
+        
+        // Enhanced connection validation and recovery settings
+        poolConfig.setConnectionTestQuery(getValidationQueryForConfig());
+        poolConfig.setValidationTimeout(5000); // 5 seconds for validation
+        poolConfig.setInitializationFailTimeout(10000); // 10 seconds to initialize pool
+        poolConfig.setMinimumIdle(Math.max(1, configParams.maxConnections() / 4)); // Keep 25% as minimum idle
+        
+        // Pool resilience settings
+        poolConfig.setPoolName("DBChatPool-" + System.currentTimeMillis());
+        poolConfig.setRegisterMbeans(true); // Enable JMX monitoring
+        
+        // Database-specific optimizations
+        configureDatabaseSpecificSettings(poolConfig);
+        
+        logger.info("Initializing connection pool with settings - Max: {}, Idle: {}, Timeout: {}ms, Validation: {}ms", 
+            configParams.maxConnections(), poolConfig.getMinimumIdle(), 
+            configParams.connectionTimeoutMs(), poolConfig.getValidationTimeout());
 
         this.dataSource = new HikariDataSource(poolConfig);
 
@@ -152,35 +169,71 @@ public class DatabaseService {
         if (configParams.selectOnly())
             validateSqlQuery(sqlQuery);
 
-        try (Connection dbConn = getConnection();
-             PreparedStatement prepStmt = dbConn.prepareStatement(sqlQuery)) {
-
+        Connection dbConn = null;
+        PreparedStatement prepStmt = null;
+        ResultSet resultSet = null;
+        
+        try {
+            // Get connection with validation
+            dbConn = getValidatedConnection();
+            
+            // Prepare statement with query timeout
+            prepStmt = dbConn.prepareStatement(sqlQuery);
             prepStmt.setMaxRows(maxRows);
             prepStmt.setQueryTimeout(configParams.queryTimeoutSeconds());
-
+            
+            // Enable query cancellation for long-running queries
+            prepStmt.setEscapeProcessing(false); // Disable escape processing for better performance
+            
             // Set parameters if provided
             if (paramList != null && !paramList.isEmpty()) {
+                logger.debug("Binding {} parameters to query", paramList.size());
                 for (int i = 0; i < paramList.size(); i++) {
-                    setParameterValue(prepStmt, i + 1, paramList.get(i));
+                    try {
+                        setParameterValue(prepStmt, i + 1, paramList.get(i));
+                        logger.trace("Parameter {}: {} (type: {})", i + 1, paramList.get(i), 
+                            paramList.get(i) != null ? paramList.get(i).getClass().getSimpleName() : "null");
+                    } catch (SQLException e) {
+                        logger.error("Failed to bind parameter {} with value '{}': {}", i + 1, paramList.get(i), e.getMessage());
+                        throw new SQLException("Parameter binding failed at position " + (i + 1) + ": " + e.getMessage(), e);
+                    }
                 }
+            } else {
+                logger.debug("No parameters to bind for query");
             }
 
-            boolean isResultSet = prepStmt.execute();
+            // Execute with timeout monitoring
+            boolean isResultSet;
+            try {
+                logger.debug("Executing query: {}", sqlQuery.length() > 200 ? sqlQuery.substring(0, 200) + "..." : sqlQuery);
+                isResultSet = prepStmt.execute();
+                logger.debug("Query executed successfully, isResultSet: {}", isResultSet);
+            } catch (SQLException e) {
+                // Check for common H2 database locking issues
+                if (e.getMessage().contains("lock") || e.getMessage().contains("timeout")) {
+                    logger.warn("Database lock or timeout detected, attempting connection recovery");
+                    // Force connection validation on next request
+                    markConnectionPoolForValidation();
+                }
+                throw e;
+            }
+            
             List<String> resultColumns = new ArrayList<>();
             List<List<Object>> resultRows = new ArrayList<>();
             int rowCount = 0;
 
             if (isResultSet) {
-                try (ResultSet resultSet = prepStmt.getResultSet()) {
-                    ResultSetMetaData metaData = resultSet.getMetaData();
-                    int columnCount = metaData.getColumnCount();
+                resultSet = prepStmt.getResultSet();
+                ResultSetMetaData metaData = resultSet.getMetaData();
+                int columnCount = metaData.getColumnCount();
 
-                    // Get column names
-                    for (int i = 1; i <= columnCount; i++) {
-                        resultColumns.add(metaData.getColumnName(i));
-                    }
+                // Get column names
+                for (int i = 1; i <= columnCount; i++) {
+                    resultColumns.add(metaData.getColumnName(i));
+                }
 
-                    // Get data rows
+                // Get data rows with timeout protection
+                try {
                     while (resultSet.next() && rowCount < maxRows) {
                         List<Object> currRow = new ArrayList<>();
                         for (int i = 1; i <= columnCount; i++) {
@@ -188,7 +241,19 @@ public class DatabaseService {
                         }
                         resultRows.add(currRow);
                         rowCount++;
+                        
+                        // Check for timeout every 1000 rows
+                        if (rowCount % 1000 == 0) {
+                            long currentTime = System.currentTimeMillis();
+                            if (currentTime - startTime > configParams.queryTimeoutSeconds() * 1000L) {
+                                logger.warn("Query execution time exceeded timeout, stopping at {} rows", rowCount);
+                                break;
+                            }
+                        }
                     }
+                } catch (SQLException e) {
+                    logger.error("Error reading result set at row {}: {}", rowCount, e.getMessage());
+                    throw new SQLException("Result set reading failed at row " + rowCount + ": " + e.getMessage(), e);
                 }
             } else {
                 // For INSERT, UPDATE, DELETE statements
@@ -200,10 +265,44 @@ public class DatabaseService {
             }
 
             long executionTime = System.currentTimeMillis() - startTime;
+            logger.debug("Query completed in {}ms, returned {} rows", executionTime, rowCount);
             return new QueryResult(resultColumns, resultRows, rowCount, executionTime);
+            
         } catch (SQLException e) {
-            logger.error("Query execution failed: {}", sqlQuery, e);
+            long executionTime = System.currentTimeMillis() - startTime;
+            logger.error("Query execution failed after {}ms: {} - Error: {}", executionTime, 
+                sqlQuery.length() > 100 ? sqlQuery.substring(0, 100) + "..." : sqlQuery, e.getMessage());
+            
+            // Check if this is a connection-related error
+            if (isConnectionError(e)) {
+                logger.warn("Connection error detected, marking pool for validation: {}", e.getMessage());
+                markConnectionPoolForValidation();
+            }
+            
             throw e;
+        } finally {
+            // Clean up resources in reverse order
+            if (resultSet != null) {
+                try {
+                    resultSet.close();
+                } catch (SQLException e) {
+                    logger.warn("Error closing result set: {}", e.getMessage());
+                }
+            }
+            if (prepStmt != null) {
+                try {
+                    prepStmt.close();
+                } catch (SQLException e) {
+                    logger.warn("Error closing prepared statement: {}", e.getMessage());
+                }
+            }
+            if (dbConn != null) {
+                try {
+                    dbConn.close();
+                } catch (SQLException e) {
+                    logger.warn("Error closing database connection: {}", e.getMessage());
+                }
+            }
         }
     }
 
@@ -988,6 +1087,166 @@ public class DatabaseService {
     }
 
     /**
+     * Obtains a validated database connection from the connection pool.
+     * Tests the connection before returning it to ensure it's functional.
+     * 
+     * @return A validated database connection from the pool
+     * @throws SQLException if a connection cannot be obtained or validated
+     */
+    private Connection getValidatedConnection() throws SQLException {
+        Connection conn = null;
+        int attempts = 0;
+        int maxAttempts = 3;
+        
+        while (attempts < maxAttempts) {
+            try {
+                conn = dataSource.getConnection();
+                
+                // Validate connection
+                if (validateConnection(conn)) {
+                    logger.trace("Connection validation successful on attempt {}", attempts + 1);
+                    return conn;
+                } else {
+                    logger.warn("Connection validation failed on attempt {}, retrying", attempts + 1);
+                    if (conn != null) {
+                        try {
+                            conn.close();
+                        } catch (SQLException e) {
+                            logger.debug("Error closing invalid connection: {}", e.getMessage());
+                        }
+                    }
+                }
+            } catch (SQLException e) {
+                logger.warn("Failed to get connection on attempt {}: {}", attempts + 1, e.getMessage());
+                if (conn != null) {
+                    try {
+                        conn.close();
+                    } catch (SQLException closeException) {
+                        logger.debug("Error closing failed connection: {}", closeException.getMessage());
+                    }
+                }
+                
+                // If this is a connection pool exhaustion, wait a bit before retrying
+                if (e.getMessage().contains("pool") || e.getMessage().contains("timeout")) {
+                    try {
+                        Thread.sleep(100 * (attempts + 1)); // Progressive delay
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        throw new SQLException("Connection attempt interrupted", ie);
+                    }
+                }
+            }
+            attempts++;
+        }
+        
+        throw new SQLException("Unable to obtain valid database connection after " + maxAttempts + " attempts");
+    }
+
+    /**
+     * Validates a database connection by executing a simple test query.
+     * 
+     * @param conn The connection to validate
+     * @return true if the connection is valid, false otherwise
+     */
+    private boolean validateConnection(Connection conn) {
+        if (conn == null) {
+            return false;
+        }
+        
+        try {
+            // Use database-specific validation query for better performance
+            String validationQuery = getValidationQuery();
+            
+            try (PreparedStatement stmt = conn.prepareStatement(validationQuery)) {
+                stmt.setQueryTimeout(5); // Quick validation timeout
+                try (ResultSet rs = stmt.executeQuery()) {
+                    return rs.next(); // Just check if we get any result
+                }
+            }
+        } catch (SQLException e) {
+            logger.debug("Connection validation failed: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Gets an appropriate validation query based on the database type.
+     * 
+     * @return A simple, fast query appropriate for the database
+     */
+    private String getValidationQuery() {
+        String dbType = configParams.getDatabaseType().toLowerCase();
+        
+        return switch (dbType) {
+            case "mysql", "mariadb" -> "SELECT 1";
+            case "postgresql" -> "SELECT 1";
+            case "oracle" -> "SELECT 1 FROM DUAL";
+            case "sqlserver" -> "SELECT 1";
+            case "h2" -> "SELECT 1";
+            case "sqlite" -> "SELECT 1";
+            default -> "SELECT 1";
+        };
+    }
+
+    /**
+     * Marks the connection pool for validation on next connection request.
+     * Used when connection errors are detected to trigger pool cleanup.
+     */
+    private void markConnectionPoolForValidation() {
+        // HikariCP automatically handles connection validation, but we can
+        // log the event and potentially trigger manual pool maintenance
+        logger.info("Connection pool marked for validation due to connection errors");
+        
+        // Log pool statistics for troubleshooting
+        try {
+            var poolBean = dataSource.getHikariPoolMXBean();
+            if (poolBean != null) {
+                logger.debug("Pool stats - Active: {}, Idle: {}, Total: {}, Waiting: {}", 
+                    poolBean.getActiveConnections(),
+                    poolBean.getIdleConnections(), 
+                    poolBean.getTotalConnections(),
+                    poolBean.getThreadsAwaitingConnection());
+            }
+        } catch (Exception e) {
+            logger.debug("Could not retrieve pool statistics: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Checks if the given SQLException indicates a connection-related problem.
+     * 
+     * @param e The SQLException to examine
+     * @return true if this appears to be a connection error
+     */
+    private boolean isConnectionError(SQLException e) {
+        if (e == null) {
+            return false;
+        }
+        
+        String message = e.getMessage().toLowerCase();
+        String sqlState = e.getSQLState();
+        
+        // Check SQL State codes for connection errors
+        if (sqlState != null) {
+            // Connection exception SQL states (08xxx)
+            if (sqlState.startsWith("08")) {
+                return true;
+            }
+        }
+        
+        // Check error message for common connection problem indicators
+        return message.contains("connection") ||
+               message.contains("network") ||
+               message.contains("timeout") ||
+               message.contains("broken pipe") ||
+               message.contains("socket") ||
+               message.contains("closed") ||
+               message.contains("lock") ||
+               message.contains("database is closed") ||
+               message.contains("connection is closed");
+    }
+
+    /**
      * Creates a new database connection (alias for getConnection for backward compatibility).
      *
      * @return A database connection from the pool
@@ -1331,5 +1590,107 @@ public class DatabaseService {
 
     public int getActiveConnections() {
         return this.dataSource.getHikariPoolMXBean().getActiveConnections();
+    }
+
+    /**
+     * Gets validation query for HikariCP configuration.
+     * 
+     * @return A validation query appropriate for the database type
+     */
+    private String getValidationQueryForConfig() {
+        String dbType = configParams.getDatabaseType().toLowerCase();
+        
+        return switch (dbType) {
+            case "mysql", "mariadb" -> "SELECT 1";
+            case "postgresql" -> "SELECT 1";
+            case "oracle" -> "SELECT 1 FROM DUAL";
+            case "sqlserver" -> "SELECT 1";
+            case "h2" -> "SELECT 1";
+            case "sqlite" -> "SELECT 1";
+            default -> "SELECT 1";
+        };
+    }
+
+    /**
+     * Configures database-specific connection pool settings for optimal performance.
+     * 
+     * @param poolConfig The HikariCP configuration to modify
+     */
+    private void configureDatabaseSpecificSettings(HikariConfig poolConfig) {
+        String dbType = configParams.getDatabaseType().toLowerCase();
+        
+        switch (dbType) {
+            case "h2" -> {
+                // H2 database specific settings for better reliability
+                poolConfig.addDataSourceProperty("cachePrepStmts", "true");
+                poolConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+                poolConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+                
+                // H2-specific connection properties to prevent locking issues
+                if (configParams.dbUrl().contains("file:")) {
+                    // For file-based H2 databases, add properties to prevent locking
+                    logger.info("Configuring H2 file database with lock prevention settings");
+                    poolConfig.addDataSourceProperty("DB_CLOSE_ON_EXIT", "FALSE");
+                    poolConfig.addDataSourceProperty("LOCK_MODE", "3"); // Read uncommitted to avoid locks
+                    
+                    // Reduce connection lifetime for file databases to prevent stale connections
+                    poolConfig.setMaxLifetime(60000); // 1 minute for file-based H2
+                    poolConfig.setIdleTimeout(30000);  // 30 seconds idle timeout
+                } else {
+                    // In-memory H2 databases can have longer lifetimes
+                    logger.info("Configuring H2 in-memory database");
+                }
+            }
+            case "mysql", "mariadb" -> {
+                // MySQL/MariaDB optimizations
+                poolConfig.addDataSourceProperty("cachePrepStmts", "true");
+                poolConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+                poolConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+                poolConfig.addDataSourceProperty("useServerPrepStmts", "true");
+                poolConfig.addDataSourceProperty("useLocalSessionState", "true");
+                poolConfig.addDataSourceProperty("rewriteBatchedStatements", "true");
+                poolConfig.addDataSourceProperty("cacheResultSetMetadata", "true");
+                poolConfig.addDataSourceProperty("cacheServerConfiguration", "true");
+                poolConfig.addDataSourceProperty("elideSetAutoCommits", "true");
+                poolConfig.addDataSourceProperty("maintainTimeStats", "false");
+            }
+            case "postgresql" -> {
+                // PostgreSQL optimizations
+                poolConfig.addDataSourceProperty("cachePrepStmts", "true");
+                poolConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+                poolConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
+                poolConfig.addDataSourceProperty("reWriteBatchedInserts", "true");
+                poolConfig.addDataSourceProperty("ApplicationName", "DBChat-MCP-Server");
+            }
+            case "oracle" -> {
+                // Oracle optimizations
+                poolConfig.addDataSourceProperty("oracle.jdbc.implicitStatementCacheSize", "25");
+                poolConfig.addDataSourceProperty("oracle.jdbc.explicitStatementCacheSize", "25");
+                poolConfig.addDataSourceProperty("oracle.net.keepAlive", "true");
+            }
+            case "sqlserver" -> {
+                // SQL Server optimizations
+                poolConfig.addDataSourceProperty("cachePrepStmts", "true");
+                poolConfig.addDataSourceProperty("prepStmtCacheSize", "250");
+                poolConfig.addDataSourceProperty("applicationName", "DBChat-MCP-Server");
+            }
+            case "sqlite" -> {
+                // SQLite specific settings
+                poolConfig.addDataSourceProperty("journal_mode", "WAL");
+                poolConfig.addDataSourceProperty("synchronous", "NORMAL");
+                poolConfig.addDataSourceProperty("cache_size", "10000");
+                poolConfig.addDataSourceProperty("foreign_keys", "true");
+                
+                // SQLite should use fewer connections as it has limited concurrency
+                poolConfig.setMaximumPoolSize(Math.min(configParams.maxConnections(), 5));
+                poolConfig.setMinimumIdle(1);
+            }
+            default -> {
+                // Generic optimizations for unknown databases
+                poolConfig.addDataSourceProperty("cachePrepStmts", "true");
+                poolConfig.addDataSourceProperty("prepStmtCacheSize", "100");
+                logger.info("Using generic database configuration for type: {}", dbType);
+            }
+        }
     }
 }

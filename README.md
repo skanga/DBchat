@@ -141,11 +141,11 @@ DBChat works with virtually any database (as long as it has a JDBC driver)
 ### Step 1: Download DBChat
 
 Download the latest release from [GitHub Releases](https://github.com/skanga/dbchat/releases):
-- [dbchat-4.0.0-basic.jar](https://github.com/skanga/dbchat/releases/download/v4.0.0/dbchat-4.0.0-basic.jar) - Basic version (PostgreSQL, SQLite, H2, HSQLDB, CSV)   `<-- Start here`
-- [dbchat-4.0.0-standard.jar](https://github.com/skanga/dbchat/releases/download/v4.0.0/dbchat-4.0.0-standard.jar) - Standard version (add MySQL, MariaDB, ClickHouse)
-- [dbchat-4.0.0-enterprise.jar](https://github.com/skanga/dbchat/releases/download/v4.0.0/dbchat-4.0.0-enterprise.jar) - Enterprise version (add Oracle, SQL Server, DB2)
-- [dbchat-4.0.0-cloud-analytics.jar](https://github.com/skanga/dbchat/releases/download/v4.0.0/dbchat-4.0.0-cloud-analytics.jar) - Cloud Analytics version (add Redshift, Snowflake, BigQuery)
-- [dbchat-4.0.0-all.jar](https://github.com/skanga/dbchat/releases/download/v4.0.0/dbchat-4.0.0-all.jar) - All databases included (400MB+)
+- [dbchat-4.0.0.jar](https://github.com/skanga/dbchat/releases/download/v4.0.0/dbchat-4.0.0.jar) - Basic version (PostgreSQL, SQLite, H2, HSQLDB, CSV)   `<-- Start here`
+- [dbchat-4.0.0.jar](https://github.com/skanga/dbchat/releases/download/v4.0.0/dbchat-4.0.0.jar) - Standard version (add MySQL, MariaDB, ClickHouse)
+- [dbchat-4.0.0.jar](https://github.com/skanga/dbchat/releases/download/v4.0.0/dbchat-4.0.0.jar) - Enterprise version (add Oracle, SQL Server, DB2)
+- [dbchat-4.0.0.jar](https://github.com/skanga/dbchat/releases/download/v4.0.0/dbchat-4.0.0.jar) - Cloud Analytics version (add Redshift, Snowflake, BigQuery)
+- [dbchat-4.0.0.jar](https://github.com/skanga/dbchat/releases/download/v4.0.0/dbchat-4.0.0.jar) - All databases included (400MB+)
 
 NOTE: Advanced users can also build a custom jar with only the drivers you need. See [INSTALL.md](INSTALL.md) for details.
 

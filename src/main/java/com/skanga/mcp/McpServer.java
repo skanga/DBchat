@@ -350,18 +350,40 @@ public class McpServer {
      * Processes a single stdio request and sends the response if needed.
      */
     private void processStdioRequest(String requestLine, PrintWriter printWriter) throws JsonProcessingException {
+        Object requestId = null;
+        boolean isNotification = true;
+        
         try {
             JsonNode requestNode = objectMapper.readTree(requestLine);
+            
+            // Extract request ID and notification status for error handling
+            isNotification = !requestNode.has("id");
+            requestId = isNotification ? null : requestNode.get("id");
+            
+            // Log the incoming request for debugging
+            String method = requestNode.path("method").asText("unknown");
+            logger.debug("Processing {} request: {} (ID: {})", 
+                isNotification ? "notification" : "request", method, requestId);
+            
             JsonNode responseNode = handleRequest(requestNode);
 
             // Only send a response if it's not a notification
             if (responseNode != null) {
-                printWriter.println(objectMapper.writeValueAsString(responseNode));
+                String responseJson = objectMapper.writeValueAsString(responseNode);
+                printWriter.println(responseJson);
+                printWriter.flush(); // Ensure immediate delivery
+                logger.debug("Response sent for request ID: {}", requestId);
+            } else if (!isNotification) {
+                // This should not happen - non-notifications should always get responses
+                logger.warn("No response generated for non-notification request ID: {}", requestId);
+                JsonNode errorResponse = createErrorResponse("internal_error", 
+                    "Internal error: no response generated", requestId);
+                printWriter.println(objectMapper.writeValueAsString(errorResponse));
+                printWriter.flush();
             }
         } catch (Exception e) {
-            logger.error("Error processing request: {}", requestLine, e);
-
-            handleStdioException(requestLine, printWriter, e);
+            logger.error("Error processing request: {} - Error: {}", requestLine, e.getMessage(), e);
+            handleStdioException(requestLine, printWriter, e, requestId, isNotification);
         }
     }
 
@@ -369,23 +391,54 @@ public class McpServer {
      * Handles exceptions during stdio request processing.
      */
     private void handleStdioException(String requestLine, PrintWriter printWriter, Exception theException) throws JsonProcessingException {
-        // Try to determine if this was a notification AND extract the request ID
-        boolean isNotification = false;
-        Object requestId = null;  // Extract the actual ID
+        handleStdioException(requestLine, printWriter, theException, null, true);
+    }
 
-        try {
-            JsonNode requestNode = objectMapper.readTree(requestLine);
-            isNotification = !requestNode.has("id");
-            requestId = isNotification ? null : requestNode.get("id");  // Get the actual ID from request
-        } catch (Exception parseException) {
-            // If we can't parse the request, we can't determine ID
-            // So requestId remains null, which is correct for unparseable requests
+    /**
+     * Handles exceptions during stdio request processing with known request context.
+     */
+    private void handleStdioException(String requestLine, PrintWriter printWriter, Exception theException, 
+                                     Object knownRequestId, boolean knownIsNotification) throws JsonProcessingException {
+        boolean isNotification = knownIsNotification;
+        Object requestId = knownRequestId;
+
+        // If we don't have the context, try to extract it
+        if (knownRequestId == null) {
+            try {
+                JsonNode requestNode = objectMapper.readTree(requestLine);
+                isNotification = !requestNode.has("id");
+                requestId = isNotification ? null : requestNode.get("id");
+            } catch (Exception parseException) {
+                logger.warn("Could not parse request line to extract ID: {}", parseException.getMessage());
+                // If we can't parse the request, we can't determine ID
+                // So requestId remains null, which is correct for unparseable requests
+            }
         }
 
         if (!isNotification) {
-            JsonNode errorResponse = createErrorResponse("internal_error",
-                "Internal server error: " + theException.getMessage(), requestId);  // Use actual ID
-            printWriter.println(objectMapper.writeValueAsString(errorResponse));
+            try {
+                JsonNode errorResponse = createErrorResponse("internal_error",
+                    "Internal server error: " + theException.getMessage(), requestId);
+                String errorJson = objectMapper.writeValueAsString(errorResponse);
+                printWriter.println(errorJson);
+                printWriter.flush(); // Ensure immediate delivery
+                logger.debug("Error response sent for request ID: {}", requestId);
+            } catch (Exception responseException) {
+                // Last resort: send a basic error response
+                logger.error("Failed to send error response: {}", responseException.getMessage());
+                try {
+                    String basicError = String.format(
+                        "{\"jsonrpc\":\"2.0\",\"id\":%s,\"error\":{\"code\":-32603,\"message\":\"Critical internal error\"}}",
+                        requestId != null ? "\"" + requestId + "\"" : "null"
+                    );
+                    printWriter.println(basicError);
+                    printWriter.flush();
+                } catch (Exception finalException) {
+                    logger.error("Could not send any error response: {}", finalException.getMessage());
+                }
+            }
+        } else {
+            logger.debug("No response sent for notification that failed");
         }
     }
 
