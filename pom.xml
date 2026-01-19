@@ -6,7 +6,7 @@
 
     <groupId>com.skanga</groupId>
     <artifactId>dbchat</artifactId>
-    <version>4.0.0</version>
+    <version>4.1.0</version>
     <packaging>jar</packaging>
 
     <name>DBChat - Database MCP Server</name>
