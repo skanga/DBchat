@@ -39,7 +39,11 @@ import java.util.Map;
  * Other features include query validation, connection pooling, and configurable access restrictions.
  */
 public class McpServer {
-    public static String serverProtocolVersion = "2025-06-18";
+    public static final String DEFAULT_PROTOCOL_VERSION = "2025-11-25";
+    public static final List<String> SUPPORTED_PROTOCOL_VERSIONS = List.of(
+            DEFAULT_PROTOCOL_VERSION,
+            "2025-06-18"
+    );
     private static final Logger logger = LoggerFactory.getLogger(McpServer.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -460,21 +464,28 @@ public class McpServer {
         String clientProtocolVersion = requestParams != null ?
                 requestParams.path("protocolVersion").asText("unknown") : "unknown";
 
-        if (!clientProtocolVersion.equals(serverProtocolVersion)) {
-            logger.warn("Protocol version mismatch. Client: {}, Server: {}",
-                    clientProtocolVersion, serverProtocolVersion);
-            throw new IllegalArgumentException(ResourceManager.getErrorMessage(
-                    "protocol.unsupported.version", clientProtocolVersion, serverProtocolVersion));
-        }
+        String negotiatedProtocolVersion = negotiateProtocolVersion(clientProtocolVersion);
 
         ObjectNode resultNode = objectMapper.createObjectNode();
-        resultNode.put("protocolVersion", serverProtocolVersion);
+        resultNode.put("protocolVersion", negotiatedProtocolVersion);
 
         ObjectNode capabilities = createCapabilities();
         resultNode.set("capabilities", capabilities);
         resultNode.set("serverInfo", objectMapper.valueToTree(serverInfo));
 
         return resultNode;
+    }
+
+    private String negotiateProtocolVersion(String clientProtocolVersion) {
+        if (SUPPORTED_PROTOCOL_VERSIONS.contains(clientProtocolVersion)) {
+            return clientProtocolVersion;
+        }
+
+        String supportedVersions = String.join(", ", SUPPORTED_PROTOCOL_VERSIONS);
+        logger.warn("Protocol version mismatch. Client: {}, Supported: {}",
+                clientProtocolVersion, supportedVersions);
+        throw new IllegalArgumentException(ResourceManager.getErrorMessage(
+                "protocol.unsupported.version", clientProtocolVersion, supportedVersions));
     }
 
     /**

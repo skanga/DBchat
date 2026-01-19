@@ -63,6 +63,7 @@ class MCPTester:
         self.java_path = java_path
         self.port = port
         self.server_process = None
+        self._http_drain_threads = []
         self.test_cases = []
         self.is_initialized = False
         self.debug = debug
@@ -167,6 +168,7 @@ class MCPTester:
                 stderr=subprocess.PIPE,
                 text=True
             )
+            self._start_http_drain()
 
             # Wait for server to start and check for immediate failures
             max_wait = 12
@@ -217,6 +219,23 @@ class MCPTester:
                 print(f"Warning: Error stopping server: {e}")
             finally:
                 self.server_process = None
+                self._http_drain_threads = []
+
+    def _start_http_drain(self):
+        if not self.server_process:
+            return
+
+        def drain(stream):
+            if not stream:
+                return
+            for _ in stream:
+                pass
+
+        import threading
+        for stream in (self.server_process.stdout, self.server_process.stderr):
+            thread = threading.Thread(target=drain, args=(stream,), daemon=True)
+            thread.start()
+            self._http_drain_threads.append(thread)
 
     def test_health_endpoint(self) -> bool:
         """Test the health endpoint (HTTP mode only)"""
@@ -330,6 +349,49 @@ class MCPTester:
                 env=env
             )
 
+            def start_stderr_drain():
+                if not process.stderr:
+                    return
+
+                def drain():
+                    for _ in process.stderr:
+                        pass
+
+                import threading
+                thread = threading.Thread(target=drain, daemon=True)
+                thread.start()
+
+            def read_with_timeout(timeout=15):
+                if not process.stdout:
+                    return None
+                if sys.platform == "win32":
+                    import threading
+                    import queue
+
+                    result_queue = queue.Queue()
+
+                    def reader():
+                        try:
+                            line = process.stdout.readline()
+                            result_queue.put(line)
+                        except Exception:
+                            result_queue.put(None)
+
+                    thread = threading.Thread(target=reader, daemon=True)
+                    thread.start()
+
+                    try:
+                        return result_queue.get(timeout=timeout)
+                    except queue.Empty:
+                        return None
+                else:
+                    import select
+                    ready, _, _ = select.select([process.stdout], [], [], timeout)
+                    if ready:
+                        return process.stdout.readline()
+                    return None
+
+            start_stderr_drain()
             responses = []
 
             for request in requests:
@@ -344,8 +406,8 @@ class MCPTester:
 
                 # Read response
                 try:
-                    output_line = process.stdout.readline()
-                    if output_line.strip():
+                    output_line = read_with_timeout()
+                    if output_line and output_line.strip():
                         response = json.loads(output_line.strip())
                         responses.append(response)
                     else:
@@ -374,7 +436,7 @@ class MCPTester:
                     "id": 1,
                     "method": "initialize",
                     "params": {
-                        "protocolVersion": "2025-06-18",
+                        "protocolVersion": "2025-11-25",
                         "capabilities": {
                             "tools": {},
                             "resources": {}

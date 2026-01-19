@@ -60,6 +60,13 @@ class DatabaseServiceTest {
         lenient().when(mockDataSource.isClosed()).thenReturn(false);
         lenient().when(connection.getMetaData()).thenReturn(metaData);
 
+        PreparedStatement validationStatement = mock(PreparedStatement.class);
+        ResultSet validationResultSet = mock(ResultSet.class);
+        lenient().when(connection.prepareStatement("SELECT 1")).thenReturn(validationStatement);
+        lenient().when(connection.prepareStatement("SELECT 1 FROM DUAL")).thenReturn(validationStatement);
+        lenient().when(validationStatement.executeQuery()).thenReturn(validationResultSet);
+        lenient().when(validationResultSet.next()).thenReturn(true);
+
         // Create service that uses the mocked datasource
         service = new DatabaseService(config, mockDataSource);
     }
@@ -290,7 +297,7 @@ class DatabaseServiceTest {
 
     @Test
     void testConnectionPoolUsage() throws Exception {
-        String sql = "SELECT 1";
+        String sql = "SELECT 1 AS result";
 
         when(connection.prepareStatement(sql)).thenReturn(statement);
         when(statement.execute()).thenReturn(true);
@@ -298,7 +305,7 @@ class DatabaseServiceTest {
 
         ResultSetMetaData rsMeta = mock(ResultSetMetaData.class);
         when(rsMeta.getColumnCount()).thenReturn(1);
-        when(rsMeta.getColumnName(1)).thenReturn("1");
+        when(rsMeta.getColumnName(1)).thenReturn("result");
         when(resultSet.getMetaData()).thenReturn(rsMeta);
         when(resultSet.next()).thenReturn(true, false);
         when(resultSet.getObject(1)).thenReturn(1);
@@ -328,8 +335,8 @@ class DatabaseServiceTest {
             }));
 
             SQLException exception = assertThrows(SQLException.class, () -> service.executeSql("SELECT 1", 10));
-            assertEquals("Connection pool exhausted", exception.getMessage());
-            verify(mockDataSource).getConnection();
+            assertEquals("Unable to obtain valid database connection after 3 attempts", exception.getMessage());
+            verify(mockDataSource, times(3)).getConnection();
 
         } finally {
             System.setErr(originalErr);
@@ -341,6 +348,14 @@ class DatabaseServiceTest {
         Connection conn = service.getConnection();
         assertEquals(connection, conn);
         verify(mockDataSource).getConnection();
+    }
+
+    @Test
+    void testGetConnectionNullReturnsError() throws Exception {
+        when(mockDataSource.getConnection()).thenReturn(null);
+
+        SQLException exception = assertThrows(SQLException.class, () -> service.getConnection());
+        assertEquals("Database connection is null", exception.getMessage());
     }
 
     @Test

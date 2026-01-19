@@ -19,12 +19,14 @@ class SimpleMCPTester:
         self.jar_path = jar_path
         self.java_path = "java"
         self.process = None
+        self._stderr_thread = None
+        self._stderr_buffer = []
         
     def setup_env(self):
         """Setup environment variables"""
         env = os.environ.copy()
         env.update({
-            'DB_URL': 'jdbc:h2:file:./test-db/mcptest;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1;CACHE_SIZE=65536',
+            'DB_URL': 'jdbc:h2:mem:mcptest;DB_CLOSE_DELAY=-1;CACHE_SIZE=65536',
             'DB_USER': 'sa',
             'DB_PASSWORD': '',
             'DB_DRIVER': 'org.h2.Driver',
@@ -48,6 +50,22 @@ class SimpleMCPTester:
             text=True,
             env=env
         )
+        self._start_stderr_drain()
+
+    def _start_stderr_drain(self):
+        if not self.process or not self.process.stderr or self._stderr_thread:
+            return
+
+        def drain():
+            for line in self.process.stderr:
+                # Keep a small tail for debugging while preventing stderr pipe blocking.
+                self._stderr_buffer.append(line)
+                if len(self._stderr_buffer) > 200:
+                    self._stderr_buffer.pop(0)
+
+        import threading
+        self._stderr_thread = threading.Thread(target=drain, daemon=True)
+        self._stderr_thread.start()
         
     def stop_process(self):
         """Stop the MCP server process"""
@@ -61,6 +79,7 @@ class SimpleMCPTester:
                     self.process.kill()
             finally:
                 self.process = None
+                self._stderr_thread = None
 
     def send_request(self, request: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Send a request to the persistent process"""
@@ -127,6 +146,10 @@ class SimpleMCPTester:
             return None
         except Exception as e:
             print(f"Error sending request: {e}")
+            if self._stderr_buffer:
+                print("Server stderr (tail):")
+                for line in self._stderr_buffer[-10:]:
+                    print(line.rstrip())
             return None
 
     def test_http_mode(self) -> bool:
@@ -178,7 +201,7 @@ class SimpleMCPTester:
                 "id": 1,
                 "method": "initialize",
                 "params": {
-                    "protocolVersion": "2025-06-18",
+                    "protocolVersion": "2025-11-25",
                     "capabilities": {"tools": {}, "resources": {}},
                     "clientInfo": {"name": "http-test", "version": "1.0"}
                 }
@@ -283,7 +306,7 @@ class SimpleMCPTester:
                     "id": 1,
                     "method": "initialize",
                     "params": {
-                        "protocolVersion": "2025-06-18",
+                        "protocolVersion": "2025-11-25",
                         "capabilities": {"tools": {}, "resources": {}},
                         "clientInfo": {"name": "test", "version": "1.0"}
                     }

@@ -101,7 +101,7 @@ class McpServerContainerTest {
                 "id": 1,
                 "method": "initialize",
                 "params": {
-                    "protocolVersion": "2024-11-05",
+                    "protocolVersion": "2025-11-25",
                     "capabilities": {},
                     "clientInfo": {"name": "test-client", "version": "1.0.0"}
                 }
@@ -109,7 +109,7 @@ class McpServerContainerTest {
             """);
 
         JsonNode initResponse = server.handleRequest(initRequest);
-        assertThat(initResponse.path("result").path("protocolVersion").asText()).isEqualTo("2024-11-05");
+        assertThat(initResponse.path("result").path("protocolVersion").asText()).isEqualTo("2025-11-25");
 
         // Test list tools
         JsonNode toolsRequest = objectMapper.readTree("""

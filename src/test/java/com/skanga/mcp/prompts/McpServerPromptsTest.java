@@ -46,7 +46,7 @@ class McpServerPromptsTest {
         initRequest.put("id", 1);
         
         ObjectNode params = objectMapper.createObjectNode();
-        params.put("protocolVersion", "2025-06-18");
+        params.put("protocolVersion", "2025-11-25");
         initRequest.set("params", params);
         
         JsonNode response = mcpServer.handleRequest(initRequest);
@@ -305,7 +305,7 @@ class McpServerPromptsTest {
         initRequest.put("id", 1);
         
         ObjectNode params = objectMapper.createObjectNode();
-        params.put("protocolVersion", "2025-06-18");
+        params.put("protocolVersion", "2025-11-25");
         initRequest.set("params", params);
         
         mcpServer.handleRequest(initRequest);

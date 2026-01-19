@@ -30,6 +30,9 @@ class DatabaseServiceValidationExceptionTest {
     @Mock
     private PreparedStatement mockStatement;
 
+    @Mock
+    private java.sql.ResultSet mockValidationResultSet;
+
     private DatabaseService databaseService;
     private DatabaseService nonSelectOnlyService;
 
@@ -50,6 +53,8 @@ class DatabaseServiceValidationExceptionTest {
         nonSelectOnlyService = new DatabaseService(nonSelectOnlyConfig, mockDataSource);
         lenient().when(mockDataSource.getConnection()).thenReturn(mockConnection);
         lenient().when(mockConnection.prepareStatement(anyString())).thenReturn(mockStatement);
+        lenient().when(mockStatement.executeQuery()).thenReturn(mockValidationResultSet);
+        lenient().when(mockValidationResultSet.next()).thenReturn(true);
     }
 
     @Test

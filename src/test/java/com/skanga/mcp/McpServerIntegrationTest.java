@@ -287,7 +287,7 @@ class McpServerIntegrationTest {
     void testStdioMode_RequestWithError() {
         // Prepare input with proper MCP initialization sequence followed by error request
         String initializeRequest = """
-        {"jsonrpc":"2.0","id":"init","method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{"tools":{},"resources":{}},"clientInfo":{"name":"TestClient","version":"1.0.0"}}}
+        {"jsonrpc":"2.0","id":"init","method":"initialize","params":{"protocolVersion":"2025-11-25","capabilities":{"tools":{},"resources":{}},"clientInfo":{"name":"TestClient","version":"1.0.0"}}}
         """;
         String initializedNotification = """
         {"jsonrpc":"2.0","method":"notifications/initialized"}

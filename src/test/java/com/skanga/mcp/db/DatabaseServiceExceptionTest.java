@@ -35,16 +35,22 @@ class DatabaseServiceExceptionTest {
     
     @Mock
     private ResultSetMetaData mockRsMetaData;
+
+    @Mock
+    private ResultSet mockValidationResultSet;
     
     private ConfigParams testConfig;
     private DatabaseService databaseService;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws SQLException {
         testConfig = new ConfigParams(
             "jdbc:h2:mem:testdb", "sa", "", "org.h2.Driver",
             10, 30000, 30, true, 10000, 10000, 600000, 1800000, 60000
         );
+        lenient().when(mockConnection.prepareStatement("SELECT 1")).thenReturn(mockStatement);
+        lenient().when(mockStatement.executeQuery()).thenReturn(mockValidationResultSet);
+        lenient().when(mockValidationResultSet.next()).thenReturn(true);
     }
 
     @Test
@@ -116,14 +122,14 @@ class DatabaseServiceExceptionTest {
                 assertThrows(SQLException.class, () -> databaseService.executeSql("SELECT * FROM test", 100))
         );
 
-        assertEquals("Database connection failed", exception.getMessage());
+        assertEquals("Unable to obtain valid database connection after 3 attempts", exception.getMessage());
     }
 
     @Test
     void testExecuteQuery_PreparedStatementFailure() throws SQLException {
         databaseService = new DatabaseService(testConfig, mockDataSource);
         when(mockDataSource.getConnection()).thenReturn(mockConnection);
-        when(mockConnection.prepareStatement(anyString())).thenThrow(new SQLException("Invalid SQL syntax"));
+        when(mockConnection.prepareStatement("INVALID SQL")).thenThrow(new SQLException("Invalid SQL syntax"));
 
         SQLException exception = TestUtils.withSuppressedLogging(() ->
                 assertThrows(SQLException.class, () -> databaseService.executeSql("INVALID SQL", 100))
@@ -197,7 +203,7 @@ class DatabaseServiceExceptionTest {
                 assertThrows(SQLException.class, () -> databaseService.executeSql("SELECT * FROM test", 100))
         );
 
-        assertEquals("ResultSet iteration error", exception.getMessage());
+        assertEquals("Result set reading failed at row 0: ResultSet iteration error", exception.getMessage());
     }
 
     @Test
@@ -217,7 +223,7 @@ class DatabaseServiceExceptionTest {
                 assertThrows(SQLException.class, () -> databaseService.executeSql("SELECT * FROM test", 100))
         );
 
-        assertEquals("Data conversion error", exception.getMessage());
+        assertEquals("Result set reading failed at row 0: Data conversion error", exception.getMessage());
     }
 
     @Test

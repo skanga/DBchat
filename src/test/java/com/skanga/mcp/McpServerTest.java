@@ -392,7 +392,7 @@ class McpServerTest {
         initRequest.put("method", "initialize");
 
         ObjectNode initParams = objectMapper.createObjectNode();
-        initParams.put("protocolVersion", "2025-06-18");
+        initParams.put("protocolVersion", "2025-11-25");
         ObjectNode capabilities = objectMapper.createObjectNode();
         ObjectNode toolsCap = objectMapper.createObjectNode();
         toolsCap.put("listChanged", false);
@@ -441,16 +441,9 @@ class McpServerTest {
                 assertDoesNotThrow(() -> mcpServer.startStdioMode());
             });
 
-            // Assert - an error response should be written for invalid JSON 
-            // (since the server can't determine if it's a notification, it defaults to sending a response)
+            // Assert - invalid JSON cannot be associated with a request ID, so no response is emitted
             String output = outputStream.toString();
-            assertFalse(output.isEmpty(), "Error response should be written for invalid JSON");
-            
-            // Verify it's a valid JSON error response
-            JsonNode errorResponse = objectMapper.readTree(output.trim());
-            assertTrue(errorResponse.has("error"), "Response should contain error field");
-            assertEquals("-32603", errorResponse.get("error").get("code").asText());
-            assertTrue(errorResponse.get("error").get("message").asText().contains("Internal server error"));
+            assertTrue(output.isEmpty(), "No response should be written for invalid JSON without an ID");
             
         } finally {
             // Restore original streams
@@ -573,6 +566,23 @@ class McpServerTest {
     }
 
     @Test
+    void testHandleInitialize_OlderSupportedProtocolVersion() {
+        ObjectNode request = objectMapper.createObjectNode();
+        request.put("id", 1);
+        request.put("method", "initialize");
+
+        ObjectNode params = objectMapper.createObjectNode();
+        params.put("protocolVersion", "2025-06-18");
+        request.set("params", params);
+
+        JsonNode response = mcpServer.handleRequest(request);
+
+        assertNotNull(response);
+        assertTrue(response.has("result"));
+        assertEquals("2025-06-18", response.get("result").get("protocolVersion").asText());
+    }
+
+    @Test
     void testHandleInitialize_AlreadyInitialized() {
         // First initialize
         TestUtils.initializeServer(mcpServer, objectMapper);
@@ -583,7 +593,7 @@ class McpServerTest {
         request.put("method", "initialize");
 
         ObjectNode params = objectMapper.createObjectNode();
-        params.put("protocolVersion", "2025-06-18");
+        params.put("protocolVersion", "2025-11-25");
         request.set("params", params);
 
         // Act
@@ -604,7 +614,7 @@ class McpServerTest {
         request.put("method", "initialize");
 
         ObjectNode params = objectMapper.createObjectNode();
-        params.put("protocolVersion", "2025-06-18");
+        params.put("protocolVersion", "2025-11-25");
         // No capabilities field
         request.set("params", params);
 

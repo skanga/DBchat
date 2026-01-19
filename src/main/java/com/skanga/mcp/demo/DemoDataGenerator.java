@@ -104,7 +104,7 @@ public class DemoDataGenerator {
             return true;
             
         } catch (Exception e) {
-            logger.error("Failed to setup demo scenario: {}", scenarioName, e);
+            logSetupFailure(scenarioName, e);
             return false;
         }
     }
@@ -126,7 +126,7 @@ public class DemoDataGenerator {
             logger.info("Successfully cleaned up demo scenario: {}", scenario.name);
             return true;
         } catch (Exception e) {
-            logger.error("Failed to cleanup demo scenario: {}", scenarioName, e);
+            logCleanupFailure(scenarioName, e);
             return false;
         }
     }
@@ -142,7 +142,7 @@ public class DemoDataGenerator {
             return false;
         }
         
-        try (Connection conn = databaseService.getConnection()) {
+        try (Connection conn = getRequiredConnection()) {
             // Check if first table in scenario exists
             String firstTable = scenario.tables.get(0);
             String checkQuery = "SELECT COUNT(*) FROM " + firstTable + " LIMIT 1";
@@ -159,7 +159,7 @@ public class DemoDataGenerator {
     // Private implementation methods
     
     private void cleanupDemoTables(DemoScenario scenario) throws SQLException {
-        try (Connection conn = databaseService.getConnection()) {
+        try (Connection conn = getRequiredConnection()) {
             // Drop tables in reverse order to handle foreign key constraints
             List<String> reverseTables = new ArrayList<>(scenario.tables);
             Collections.reverse(reverseTables);
@@ -177,7 +177,7 @@ public class DemoDataGenerator {
     }
     
     private void setupRetailScenario() throws SQLException {
-        try (Connection conn = databaseService.getConnection()) {
+        try (Connection conn = getRequiredConnection()) {
             // Create customers table
             executeUpdate(conn, """
                 CREATE TABLE customers (
@@ -252,7 +252,7 @@ public class DemoDataGenerator {
     }
     
     private void setupFinanceScenario() throws SQLException {
-        try (Connection conn = databaseService.getConnection()) {
+        try (Connection conn = getRequiredConnection()) {
             // Create customers table
             executeUpdate(conn, """
                 CREATE TABLE customers (
@@ -333,7 +333,7 @@ public class DemoDataGenerator {
     }
     
     private void setupLogisticsScenario() throws SQLException {
-        try (Connection conn = databaseService.getConnection()) {
+        try (Connection conn = getRequiredConnection()) {
             // Create warehouses table
             executeUpdate(conn, """
                 CREATE TABLE warehouses (
@@ -811,6 +811,38 @@ public class DemoDataGenerator {
         try (Statement stmt = conn.createStatement()) {
             stmt.executeUpdate(sql);
         }
+    }
+
+    private Connection getRequiredConnection() throws SQLException {
+        Connection conn = databaseService.getConnection();
+        if (conn == null) {
+            throw new SQLException("Database connection is null");
+        }
+        return conn;
+    }
+
+    private void logCleanupFailure(String scenarioName, Exception e) {
+        if (isNullConnectionException(e)) {
+            logger.warn("Cleanup failed for scenario: {} (no database connection)", scenarioName);
+            return;
+        }
+        logger.error("Failed to cleanup demo scenario: {}", scenarioName, e);
+    }
+
+    private void logSetupFailure(String scenarioName, Exception e) {
+        if (isNullConnectionException(e)) {
+            logger.warn("Setup failed for scenario: {} (no database connection)", scenarioName);
+            return;
+        }
+        logger.error("Failed to setup demo scenario: {}", scenarioName, e);
+    }
+
+    private boolean isNullConnectionException(Exception e) {
+        if (!(e instanceof SQLException)) {
+            return false;
+        }
+        String message = e.getMessage();
+        return message != null && message.equals("Database connection is null");
     }
     
     /**

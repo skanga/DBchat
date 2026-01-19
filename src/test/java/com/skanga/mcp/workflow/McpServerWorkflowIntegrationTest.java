@@ -13,6 +13,10 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.Statement;
+
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -279,10 +283,17 @@ class McpServerWorkflowIntegrationTest {
     
     @Test
     @DisplayName("Should execute setup_demo_scenario tool")
-    void testExecuteSetupDemoScenarioTool() {
+    void testExecuteSetupDemoScenarioTool() throws Exception {
         // Initialize server
         TestUtils.initializeServer(mcpServer, objectMapper);
-        
+
+        Connection connection = mock(Connection.class);
+        Statement statement = mock(Statement.class);
+        PreparedStatement preparedStatement = mock(PreparedStatement.class);
+        when(connection.createStatement()).thenReturn(statement);
+        when(connection.prepareStatement(anyString())).thenReturn(preparedStatement);
+        when(mockDatabaseService.getConnection()).thenReturn(connection);
+
         // Create setup_demo_scenario tool call
         ObjectNode toolCall = objectMapper.createObjectNode();
         toolCall.put("method", "tools/call");

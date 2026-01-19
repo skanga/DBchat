@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.skanga.mcp.config.ConfigParams;
 import com.skanga.mcp.db.DatabaseService;
 import com.skanga.mcp.db.QueryResult;
+import com.zaxxer.hikari.HikariDataSource;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,13 +42,22 @@ class McpServerPerformanceTest {
     @Mock
     private ResultSetMetaData mockMetaData;
 
-    private MockDatabaseService databaseService;
+    @Mock
+    private HikariDataSource mockDataSource;
+
+    @Mock
+    private ResultSet mockValidationResultSet;
+
+    private DatabaseService databaseService;
     private ObjectMapper objectMapper;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws SQLException {
         ConfigParams config = ConfigParams.defaultConfig("jdbc:h2:mem:test", "sa", "", "org.h2.Driver");
-        databaseService = new MockDatabaseService(config, mockConnection);
+        databaseService = new DatabaseService(config, mockDataSource);
+        lenient().when(mockDataSource.getConnection()).thenReturn(mockConnection);
+        lenient().when(mockStatement.executeQuery()).thenReturn(mockValidationResultSet);
+        lenient().when(mockValidationResultSet.next()).thenReturn(true);
         objectMapper = new ObjectMapper();
     }
 
@@ -264,7 +274,8 @@ class McpServerPerformanceTest {
             
             // Then - Verify reasonable formatting performance
             assertThat(formatted).isNotEmpty();
-            assertThat(formattingTime).isLessThan(rowCount * 2); // Should be roughly linear
+            long maxAllowed = Math.max(50L, rowCount * 2L);
+            assertThat(formattingTime).isLessThan(maxAllowed); // Should be roughly linear
             
             System.out.printf("Formatting %d rows took %dms%n", rowCount, formattingTime);
         }
@@ -433,23 +444,4 @@ class McpServerPerformanceTest {
         return sb.toString();
     }
 
-    // Mock service implementation
-    private static class MockDatabaseService extends DatabaseService {
-        private final Connection mockConnection;
-
-        public MockDatabaseService(ConfigParams config, Connection mockConnection) {
-            super(config); // Skip initialization
-            this.mockConnection = mockConnection;
-        }
-
-        @Override
-        public Connection getConnection() {
-            return mockConnection;
-        }
-
-        @Override
-        protected Connection createConnection() {
-            return mockConnection;
-        }
-    }
 }

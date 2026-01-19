@@ -1083,7 +1083,11 @@ public class DatabaseService {
      * @throws SQLException if a connection cannot be obtained
      */
     public Connection getConnection() throws SQLException {
-        return dataSource.getConnection();
+        Connection conn = dataSource.getConnection();
+        if (conn == null) {
+            throw new SQLException("Database connection is null");
+        }
+        return conn;
     }
 
     /**
@@ -1253,7 +1257,7 @@ public class DatabaseService {
      * @throws SQLException if a connection cannot be obtained
      */
     protected Connection createConnection() throws SQLException {
-        return dataSource.getConnection();
+        return getConnection();
     }
 
     /**

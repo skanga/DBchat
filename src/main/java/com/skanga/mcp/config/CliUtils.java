@@ -219,7 +219,7 @@ public class CliUtils {
     static void displayVersion() {
         System.out.println(SERVER_NAME + " v" + SERVER_VERSION);
         System.out.println(SERVER_DESCRIPTION);
-        System.out.println("MCP Protocol Version: " + McpServer.serverProtocolVersion);
+        System.out.println("MCP Protocol Version: " + McpServer.DEFAULT_PROTOCOL_VERSION);
         System.out.println("Java Version: " + System.getProperty("java.version"));
         System.out.println("Java Vendor: " + System.getProperty("java.vendor"));
         System.out.println();

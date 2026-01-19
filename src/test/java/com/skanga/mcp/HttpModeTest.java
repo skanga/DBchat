@@ -165,7 +165,7 @@ class HttpModeTest {
             "id": 1,
             "method": "initialize",
             "params": {
-                "protocolVersion": "2025-06-18",
+                "protocolVersion": "2025-11-25",
                 "capabilities": {
                     "tools": {},
                     "resources": {}
@@ -377,7 +377,7 @@ class HttpModeTest {
                 "jsonrpc": "2.0",
                 "method": "initialize",
                 "params": {
-                    "protocolVersion": "2025-06-18",
+                    "protocolVersion": "2025-11-25",
                     "capabilities": {},
                     "clientInfo": {
                         "name": "test-client",

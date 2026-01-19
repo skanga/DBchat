@@ -12,8 +12,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import static com.github.stefanbirkner.systemlambda.SystemLambda.catchSystemExit;
-import static com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemErr;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -144,17 +142,12 @@ class McpServerConfigurationTest {
     void testMainMethod_InvalidConfiguration() throws Exception {
         String[] args = {"--max_connections=invalid"};
 
-        // Capture both exit code and output
-        int exitCode = catchSystemExit(() -> {
-            String errorOutput = tapSystemErr(() -> McpServer.main(args));
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () ->
+                CliUtils.loadConfiguration(args)
+        );
 
-            // Verify error message
-            assertTrue(errorOutput.contains("CONFIGURATION ERROR") ||
-                    errorOutput.contains("invalid"));
-        });
-
-        // Verify exit code
-        assertNotEquals(0, exitCode, "Should exit with error code");
+        assertTrue(exception.getMessage().contains("configuration parameters") ||
+                exception.getMessage().contains("invalid"));
     }
 
     @Test
@@ -162,7 +155,7 @@ class McpServerConfigurationTest {
         String[] args = {"--http_mode=false", "--db_url=jdbc:h2:mem:testdb", "--db_driver=org.h2.Driver"};
 
         // Create input that sends a proper JSON-RPC request and then closes
-        String initRequest = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-06-18\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test\",\"version\":\"1.0\"}}}\n";
+        String initRequest = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-11-25\",\"capabilities\":{},\"clientInfo\":{\"name\":\"test\",\"version\":\"1.0\"}}}\n";
         ByteArrayInputStream testInput = new ByteArrayInputStream(initRequest.getBytes());
 
         // Capture output
