@@ -340,11 +340,6 @@
                 </dependency>
             </dependencies>
 
-            <!-- Override default JVM args for enterprise databases -->
-            <properties>
-                <maven.compiler.release>11</maven.compiler.release>
-                <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-            </properties>
         </profile>
         <profile>
             <id>cloud-analytics</id>
