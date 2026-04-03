@@ -203,7 +203,7 @@ fi
 # Commit and tag
 if [ "$DRY_RUN" == "false" ]; then
     print_status "Committing version update..."
-    git add pom.xml
+    git add pom.xml README.md INSTALL.md DIR.md src/main/java/com/skanga/mcp/config/CliUtils.java
     git commit -m "Release v$VERSION"
 
     print_status "Creating tag v$VERSION..."

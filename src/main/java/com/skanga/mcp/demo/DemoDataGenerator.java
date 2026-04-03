@@ -68,14 +68,22 @@ public class DemoDataGenerator {
      * Gets scenario information
      */
     public static DemoScenario getScenarioInfo(String scenarioName) {
-        return DEMO_SCENARIOS.get(scenarioName.toLowerCase());
+        String normalizedScenario = normalizeScenarioName(scenarioName);
+        if (normalizedScenario == null) {
+            return null;
+        }
+        return DEMO_SCENARIOS.get(normalizedScenario);
     }
     
     /**
      * Sets up complete demo scenario with all tables and data
      */
     public boolean setupDemoScenario(String scenarioName) {
-        String normalizedScenario = scenarioName.toLowerCase();
+        String normalizedScenario = normalizeScenarioName(scenarioName);
+        if (normalizedScenario == null) {
+            logger.warn("Invalid demo scenario name: {}", scenarioName);
+            return false;
+        }
         DemoScenario scenario = DEMO_SCENARIOS.get(normalizedScenario);
         
         if (scenario == null) {
@@ -113,7 +121,11 @@ public class DemoDataGenerator {
      * Cleans up all demo tables for a scenario
      */
     public boolean cleanupDemoScenario(String scenarioName) {
-        String normalizedScenario = scenarioName.toLowerCase();
+        String normalizedScenario = normalizeScenarioName(scenarioName);
+        if (normalizedScenario == null) {
+            logger.warn("Invalid demo scenario name for cleanup: {}", scenarioName);
+            return false;
+        }
         DemoScenario scenario = DEMO_SCENARIOS.get(normalizedScenario);
         
         if (scenario == null) {
@@ -135,7 +147,10 @@ public class DemoDataGenerator {
      * Checks if demo scenario tables exist
      */
     public boolean isDemoScenarioActive(String scenarioName) {
-        String normalizedScenario = scenarioName.toLowerCase();
+        String normalizedScenario = normalizeScenarioName(scenarioName);
+        if (normalizedScenario == null) {
+            return false;
+        }
         DemoScenario scenario = DEMO_SCENARIOS.get(normalizedScenario);
         
         if (scenario == null) {
@@ -819,6 +834,14 @@ public class DemoDataGenerator {
             throw new SQLException("Database connection is null");
         }
         return conn;
+    }
+
+    private static String normalizeScenarioName(String scenarioName) {
+        if (scenarioName == null) {
+            return null;
+        }
+        String normalizedScenario = scenarioName.trim().toLowerCase(Locale.ROOT);
+        return normalizedScenario.isEmpty() ? null : normalizedScenario;
     }
 
     private void logCleanupFailure(String scenarioName, Exception e) {

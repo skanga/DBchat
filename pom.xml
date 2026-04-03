@@ -990,11 +990,11 @@
                             </includes>
                             <replacements>
                                 <replacement>
-                                    <token>dbchat-(?:[0-9]+(?:\.[0-9]+)*)(-[a-z\-]+\.jar)</token>
+                                    <token>dbchat-(?:[0-9]+(?:\.[0-9]+)*)\.jar</token>
                                     <value>dbchat-${project.version}.jar</value>
                                 </replacement>
                                 <replacement>
-                                    <token>dbchat-(?:[0-9]+(?:\.[0-9]+)*)(-[a-z\-]+\.jar)</token>
+                                    <token>dbchat-(?:[0-9]+(?:\.[0-9]+)*)(-[a-z0-9\-]+\.jar)</token>
                                     <value>dbchat-${project.version}$1</value>
                                 </replacement>
                             </replacements>

@@ -6,7 +6,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.LongSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -326,5 +329,69 @@ class WorkflowManagerTest {
         // List should show both active
         JsonNode activeList = workflowManager.listActiveWorkflows();
         assertThat(activeList.get("totalActive").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Should generate unique workflow IDs when clock does not advance")
+    void testWorkflowIdsRemainUniqueWhenClockDoesNotAdvance() {
+        LongSupplier fixedClock = () -> 123456789L;
+        WorkflowManager fixedClockManager = new WorkflowManager("h2", fixedClock);
+
+        Set<String> workflowIds = new HashSet<>();
+        for (int i = 0; i < 3; i++) {
+            JsonNode workflow = fixedClockManager.startWorkflow("retail", "testUser");
+            workflowIds.add(workflow.get("workflowId").asText());
+        }
+
+        assertThat(workflowIds).hasSize(3);
+        assertThat(fixedClockManager.listActiveWorkflows().get("totalActive").asInt()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("Should report finance workflow step count consistently")
+    void testFinanceWorkflowStepCountIsConsistent() {
+        JsonNode startResult = workflowManager.startWorkflow("finance", "testUser");
+        String workflowId = startResult.get("workflowId").asText();
+
+        JsonNode status = workflowManager.getWorkflowStatus(workflowId);
+        assertThat(status.get("totalSteps").asInt()).isEqualTo(2);
+
+        Map<String, String> additionalData = new HashMap<>();
+        JsonNode nextStep = workflowManager.processChoice(workflowId, "explore_accounts", additionalData);
+        assertThat(nextStep.get("progress").asDouble()).isEqualTo(50.0);
+
+        JsonNode completion = workflowManager.processChoice(workflowId, "run_query", additionalData);
+        assertThat(completion.get("completed").asBoolean()).isTrue();
+        assertThat(completion.get("totalSteps").asInt()).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("Should report logistics workflow step count consistently")
+    void testLogisticsWorkflowStepCountIsConsistent() {
+        JsonNode startResult = workflowManager.startWorkflow("logistics", "testUser");
+        String workflowId = startResult.get("workflowId").asText();
+
+        JsonNode status = workflowManager.getWorkflowStatus(workflowId);
+        assertThat(status.get("totalSteps").asInt()).isEqualTo(1);
+
+        Map<String, String> additionalData = new HashMap<>();
+        JsonNode completion = workflowManager.processChoice(workflowId, "explore_shipments", additionalData);
+        assertThat(completion.get("completed").asBoolean()).isTrue();
+        assertThat(completion.get("totalSteps").asInt()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("Should report generic workflow step count consistently")
+    void testGenericWorkflowStepCountIsConsistent() {
+        JsonNode startResult = workflowManager.startWorkflow("generic", "testUser");
+        String workflowId = startResult.get("workflowId").asText();
+
+        JsonNode status = workflowManager.getWorkflowStatus(workflowId);
+        assertThat(status.get("totalSteps").asInt()).isEqualTo(1);
+
+        Map<String, String> additionalData = new HashMap<>();
+        JsonNode completion = workflowManager.processChoice(workflowId, "explore_tables", additionalData);
+        assertThat(completion.get("completed").asBoolean()).isTrue();
+        assertThat(completion.get("totalSteps").asInt()).isEqualTo(1);
     }
 }

@@ -43,7 +43,7 @@ DBChat uses Maven profiles to manage JDBC driver dependencies. This approach kee
 mvn clean package
 ```
 
-**Resulting JAR:** `target/dbchat-4.0.0.jar` (~15MB)
+**Resulting JAR:** `target/dbchat-4.1.0.jar` (~15MB)
 
 #### Standard Databases Profile (`-P standard-databases`)
 **Additional drivers:**
@@ -56,7 +56,7 @@ mvn clean package
 mvn clean package -P standard-databases
 ```
 
-**Resulting JAR:** `target/dbchat-4.0.0.jar` (~25MB)
+**Resulting JAR:** `target/dbchat-4.1.0.jar` (~25MB)
 
 #### Enterprise Databases Profile (`-P enterprise-databases`)
 **Additional drivers:**
@@ -69,7 +69,7 @@ mvn clean package -P standard-databases
 mvn clean package -P standard-databases,enterprise-databases
 ```
 
-**Resulting JAR:** `target/dbchat-4.0.0.jar` (~60MB)
+**Resulting JAR:** `target/dbchat-4.1.0.jar` (~60MB)
 
 **Note:** Enterprise drivers require accepting additional licenses. Ensure compliance with vendor licensing terms.
 
@@ -85,7 +85,7 @@ mvn clean package -P standard-databases,enterprise-databases
 mvn clean package -P standard-databases,cloud-analytics
 ```
 
-**Resulting JAR:** `target/dbchat-4.0.0.jar` (~80MB)
+**Resulting JAR:** `target/dbchat-4.1.0.jar` (~80MB)
 
 #### Big Data Profile (`-P big-data`)
 **Additional drivers:**
@@ -99,14 +99,14 @@ mvn clean package -P standard-databases,cloud-analytics
 mvn clean package -P standard-databases,big-data
 ```
 
-**Resulting JAR:** `target/dbchat-4.0.0.jar` (~120MB)
+**Resulting JAR:** `target/dbchat-4.1.0.jar` (~120MB)
 
 #### Complete Build (All Profiles)
 ```bash
 mvn clean package -P standard-databases,enterprise-databases,cloud-analytics,big-data
 ```
 
-**Resulting JAR:** `target/dbchat-4.0.0.jar` (~400MB)
+**Resulting JAR:** `target/dbchat-4.1.0.jar` (~400MB)
 
 ### Custom Profile Combinations
 
@@ -153,13 +153,13 @@ mvn clean package -P standard-databases,cloud-analytics
 
 ```bash
 # Check that the JAR file was created
-ls -la target/dbchat-4.0.0.jar
+ls -la target/dbchat-4.1.0.jar
 
 # Check included drivers
-jar tf target/dbchat-4.0.0.jar | grep -E "\.(jar|class)" | grep -E "(mysql|postgres|oracle)"
+jar tf target/dbchat-4.1.0.jar | grep -E "\.(jar|class)" | grep -E "(mysql|postgres|oracle)"
 
 # Quick test to see if it starts
-java -jar target/dbchat-4.0.0.jar
+java -jar target/dbchat-4.1.0.jar
 
 Ctrl-C to stop it
 ```
@@ -429,25 +429,25 @@ DBChat supports two transport modes for different deployment scenarios:
 #### stdio Development Mode
 ```bash
 # Basic stdio mode
-java -jar target/dbchat-4.0.0.jar
+java -jar target/dbchat-4.1.0.jar
 
 # Debug mode with detailed logging
-java -Dlogging.level.root=DEBUG -jar target/dbchat-4.0.0.jar
+java -Dlogging.level.root=DEBUG -jar target/dbchat-4.1.0.jar
 
 # Test with manual input
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | java -jar target/dbchat-4.0.0.jar
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | java -jar target/dbchat-4.1.0.jar
 ```
 
 #### HTTP Development Mode
 ```bash
 # Basic HTTP mode
-java -jar target/dbchat-4.0.0.jar --http_mode=true
+java -jar target/dbchat-4.1.0.jar --http_mode=true
 
 # Custom port with debug logging
-java -Dlogging.level.root=DEBUG -jar target/dbchat-4.0.0.jar --http_mode=true --http_port=9090
+java -Dlogging.level.root=DEBUG -jar target/dbchat-4.1.0.jar --http_mode=true --http_port=9090
 
 # Production-like settings
-java -jar target/dbchat-4.0.0.jar \
+java -jar target/dbchat-4.1.0.jar \
   --http_mode=true \
   --http_port=8080 \
   --max_connections=50 \
@@ -508,13 +508,13 @@ HTTP_PORT=3001
 #### Usage:
 ```bash
 # Use specific config file
-java -jar target/dbchat-4.0.0.jar --config_file=production.conf
+java -jar target/dbchat-4.1.0.jar --config_file=production.conf
 
 # Override specific settings
-java -jar target/dbchat-4.0.0.jar --config_file=production.conf --http_port=9090
+java -jar target/dbchat-4.1.0.jar --config_file=production.conf --http_port=9090
 
 # Multiple config files for different environments
-java -jar target/dbchat-4.0.0.jar --config_file=base.conf --config_file=env-specific.conf
+java -jar target/dbchat-4.1.0.jar --config_file=base.conf --config_file=env-specific.conf
 ```
 
 ### Advanced Configuration Options
@@ -603,25 +603,25 @@ mvn verify -P integration-tests
 #### stdio Mode Testing
 ```bash
 # Initialize protocol
-echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | java -jar target/dbchat-4.0.0.jar
+echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | java -jar target/dbchat-4.1.0.jar
 
 # Send initialized notification
-echo '{"jsonrpc":"2.0","method":"notifications/initialized"}' | java -jar target/dbchat-4.0.0.jar
+echo '{"jsonrpc":"2.0","method":"notifications/initialized"}' | java -jar target/dbchat-4.1.0.jar
 
 # List tools
-echo '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | java -jar target/dbchat-4.0.0.jar
+echo '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | java -jar target/dbchat-4.1.0.jar
 
 # Execute query
-echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"query","arguments":{"sql":"SELECT 1 as test","maxRows":1}}}' | java -jar target/dbchat-4.0.0.jar
+echo '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"query","arguments":{"sql":"SELECT 1 as test","maxRows":1}}}' | java -jar target/dbchat-4.1.0.jar
 
 # List resources
-echo '{"jsonrpc":"2.0","id":4,"method":"resources/list","params":{}}' | java -jar target/dbchat-4.0.0.jar
+echo '{"jsonrpc":"2.0","id":4,"method":"resources/list","params":{}}' | java -jar target/dbchat-4.1.0.jar
 ```
 
 #### HTTP Mode Testing
 ```bash
 # Start server
-java -jar target/dbchat-4.0.0.jar --http_mode=true &
+java -jar target/dbchat-4.1.0.jar --http_mode=true &
 SERVER_PID=$!
 
 # Wait for startup
@@ -687,7 +687,7 @@ def test_stdio_mode():
     }
     
     result = subprocess.run(
-        ["java", "-jar", "target/dbchat-4.0.0.jar"],
+        ["java", "-jar", "target/dbchat-4.1.0.jar"],
         input=json.dumps(init_request),
         text=True,
         capture_output=True
@@ -708,7 +708,7 @@ def test_http_mode():
     
     # Start server
     process = subprocess.Popen([
-        "java", "-jar", "target/dbchat-4.0.0.jar", 
+        "java", "-jar", "target/dbchat-4.1.0.jar", 
         "--http_mode=true", "--http_port=8081"
     ])
     
@@ -760,13 +760,13 @@ echo "Testing DBChat build and functionality..."
 # Test basic build
 echo "Testing basic build..."
 mvn clean package -q
-test -f target/dbchat-4.0.0.jar || (echo "Build failed" && exit 1)
+test -f target/dbchat-4.1.0.jar || (echo "Build failed" && exit 1)
 echo "✓ Basic build successful"
 
 # Test standard databases build
 echo "Testing standard databases build..."
 mvn clean package -P standard-databases -q
-test -f target/dbchat-4.0.0.jar || (echo "Standard build failed" && exit 1)
+test -f target/dbchat-4.1.0.jar || (echo "Standard build failed" && exit 1)
 echo "✓ Standard databases build successful"
 
 # Test enterprise databases build (if available)
@@ -780,7 +780,7 @@ fi
 # Test basic functionality
 echo "Testing basic functionality..."
 echo '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","capabilities":{},"clientInfo":{"name":"test","version":"1.0"}}}' | \
-    timeout 10s java -jar target/dbchat-4.0.0.jar > /dev/null || (echo "Functionality test failed" && exit 1)
+    timeout 10s java -jar target/dbchat-4.1.0.jar > /dev/null || (echo "Functionality test failed" && exit 1)
 echo "✓ Basic functionality test passed"
 
 echo "All tests completed successfully!"
@@ -797,7 +797,7 @@ FROM openjdk:17-jdk-slim
 WORKDIR /app
 
 # Copy built JAR
-COPY target/dbchat-4.0.0.jar
+COPY target/dbchat-4.1.0.jar
 
 # Create non-root user
 RUN useradd -m -u 1000 dbchat
@@ -884,7 +884,7 @@ RUN apt-get update && apt-get upgrade -y && rm -rf /var/lib/apt/lists/*
 RUN useradd -m -u 1000 dbchat
 
 # Copy JAR from build stage
-COPY --from=build /app/target/dbchat-4.0.0.jar
+COPY --from=build /app/target/dbchat-4.1.0.jar
 
 # Change ownership
 RUN chown dbchat:dbchat dbchat.jar
@@ -1016,7 +1016,7 @@ Create separate run configurations for different profiles:
 ### Local Development Deployment
 ```bash
 # Quick development setup
-java -jar target/dbchat-4.0.0.jar \
+java -jar target/dbchat-4.1.0.jar \
   --config_file=dev.conf \
   --http_mode=true \
   --http_port=3001
@@ -1025,7 +1025,7 @@ java -jar target/dbchat-4.0.0.jar \
 ### Staging Environment Deployment
 ```bash
 # Staging with PostgreSQL
-java -jar target/dbchat-4.0.0.jar \
+java -jar target/dbchat-4.1.0.jar \
   --config_file=staging.conf \
   --http_mode=true \
   --http_port=8080 \
@@ -1046,7 +1046,7 @@ Type=simple
 User=dbchat
 Group=dbchat
 WorkingDirectory=/opt/dbchat
-ExecStart=/usr/bin/java -jar /opt/dbchat/dbchat-4.0.0.jar --config_file=/etc/dbchat/production.conf
+ExecStart=/usr/bin/java -jar /opt/dbchat/dbchat-4.1.0.jar --config_file=/etc/dbchat/production.conf
 Restart=always
 RestartSec=10
 StandardOutput=journal
@@ -1077,7 +1077,7 @@ sudo mkdir -p /etc/dbchat
 sudo mkdir -p /var/log/dbchat
 
 # Copy files
-sudo cp target/dbchat-4.0.0.jar /opt/dbchat/
+sudo cp target/dbchat-4.1.0.jar /opt/dbchat/
 sudo cp production.conf /etc/dbchat/
 sudo cp dbchat.service /etc/systemd/system/
 
@@ -1191,10 +1191,10 @@ mvn clean install -U
 #### JDBC Driver Issues
 ```bash
 # Verify driver in JAR
-jar tf target/dbchat-4.0.0.jar | grep -E "(mysql|postgres|oracle)"
+jar tf target/dbchat-4.1.0.jar | grep -E "(mysql|postgres|oracle)"
 
 # Test driver loading
-java -cp target/dbchat-4.0.0.jar -e "Class.forName('com.mysql.cj.jdbc.Driver')"
+java -cp target/dbchat-4.1.0.jar -e "Class.forName('com.mysql.cj.jdbc.Driver')"
 
 # Check driver versions
 mvn dependency:list | grep -E "(mysql|postgres|oracle)"
@@ -1205,7 +1205,7 @@ mvn dependency:list | grep -E "(mysql|postgres|oracle)"
 #### Connection Problems
 ```bash
 # Test database connectivity
-java -cp target/dbchat-4.0.0.jar -e "
+java -cp target/dbchat-4.1.0.jar -e "
 import java.sql.*;
 Connection conn = DriverManager.getConnection('$DB_URL', '$DB_USER', '$DB_PASSWORD');
 System.out.println('Connection successful');
@@ -1213,19 +1213,19 @@ conn.close();
 "
 
 # Verify JDBC URL format
-java -jar target/dbchat-4.0.0.jar --db_url="$DB_URL" --help
+java -jar target/dbchat-4.1.0.jar --db_url="$DB_URL" --help
 ```
 
 #### Memory Issues
 ```bash
 # Monitor memory usage
-java -Xmx512m -XX:+PrintGCDetails -jar target/dbchat-4.0.0.jar
+java -Xmx512m -XX:+PrintGCDetails -jar target/dbchat-4.1.0.jar
 
 # Profile memory allocation
-java -XX:+UseG1GC -XX:+PrintGCApplicationStoppedTime -jar target/dbchat-4.0.0.jar
+java -XX:+UseG1GC -XX:+PrintGCApplicationStoppedTime -jar target/dbchat-4.1.0.jar
 
 # Enable heap dump on OOM
-java -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp -jar target/dbchat-4.0.0.jar
+java -XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/tmp -jar target/dbchat-4.1.0.jar
 ```
 
 #### Performance Debugging
@@ -1235,10 +1235,10 @@ java -Dcom.sun.management.jmxremote \
      -Dcom.sun.management.jmxremote.port=9999 \
      -Dcom.sun.management.jmxremote.authenticate=false \
      -Dcom.sun.management.jmxremote.ssl=false \
-     -jar target/dbchat-4.0.0.jar
+     -jar target/dbchat-4.1.0.jar
 
 # Profile with async-profiler
-java -jar target/dbchat-4.0.0.jar &
+java -jar target/dbchat-4.1.0.jar &
 PID=$!
 ./profiler.sh -d 30 -f profile.html $PID
 ```

@@ -29,6 +29,7 @@ public class DatabaseLoader {
     }
 
     private static final String DROP_TABLES_FILE = "drop-tables.sql";
+    private static final String CREATE_INDEXES_FILE = "create-indexes.sql";
     private static final String CREATE_TABLES_SUFFIX = ".sql";
     private static final String DATA_SUFFIX = "-data.sql";
 
@@ -64,6 +65,7 @@ public class DatabaseLoader {
                 dropTables(conn, schema);
                 createTables(conn, dbType, schema);
                 populateData(conn, dbType, schema);
+                createIndexes(conn, schema);
                 conn.commit();
                 System.out.println("Database setup complete for schema: " + schema);
             } catch (Exception e) {
@@ -154,6 +156,26 @@ public class DatabaseLoader {
                 if (!dataSql.trim().isEmpty()) {
                     System.out.println("Executing: " + dataSql.substring(0, Math.min(50, dataSql.length())) + "...");
                     stmt.executeUpdate(dataSql);
+                }
+            }
+        }
+    }
+
+    private static void createIndexes(Connection conn, String schema) throws SQLException, IOException {
+        String indexFileName = schema + "/" + CREATE_INDEXES_FILE;
+        System.out.println("Reading index statements from: " + indexFileName);
+
+        List<String> indexStatements = readSqlStatementsFromClasspath(indexFileName);
+        if (indexStatements.isEmpty()) {
+            System.out.println("No index statements found. Skipping index creation.");
+            return;
+        }
+
+        try (Statement stmt = conn.createStatement()) {
+            for (String indexSql : indexStatements) {
+                if (!indexSql.trim().isEmpty()) {
+                    System.out.println("Executing: " + indexSql.substring(0, Math.min(50, indexSql.length())) + "...");
+                    stmt.execute(indexSql);
                 }
             }
         }

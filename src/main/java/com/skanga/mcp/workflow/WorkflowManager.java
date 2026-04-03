@@ -8,7 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.LongSupplier;
 
 /**
  * Interactive Multiple Choice Workflow System - Manages guided database analysis workflows
@@ -22,9 +24,16 @@ public class WorkflowManager {
     // Workflow state storage (in-memory for now)
     private final Map<String, WorkflowState> activeWorkflows = new ConcurrentHashMap<>();
     private final String databaseType;
+    private final LongSupplier currentTimeSupplier;
+    private final AtomicLong workflowSequence = new AtomicLong();
 
     public WorkflowManager(String databaseType) {
+        this(databaseType, System::currentTimeMillis);
+    }
+
+    WorkflowManager(String databaseType, LongSupplier currentTimeSupplier) {
         this.databaseType = databaseType != null ? databaseType : "unknown";
+        this.currentTimeSupplier = Objects.requireNonNull(currentTimeSupplier, "currentTimeSupplier");
         logger.info("WorkflowManager initialized for database type: {}", this.databaseType);
     }
 
@@ -41,7 +50,7 @@ public class WorkflowManager {
         state.currentStep = 0;
         state.stepHistory = new ArrayList<>();
         state.userChoices = new HashMap<>();
-        state.startTime = System.currentTimeMillis();
+        state.startTime = currentTimeSupplier.getAsLong();
 
         activeWorkflows.put(workflowId, state);
 
@@ -61,7 +70,7 @@ public class WorkflowManager {
 
         // Record the choice
         state.userChoices.put("step_" + state.currentStep, choiceId);
-        state.stepHistory.add(new StepRecord(state.currentStep, choiceId, System.currentTimeMillis()));
+        state.stepHistory.add(new StepRecord(state.currentStep, choiceId, currentTimeSupplier.getAsLong()));
 
         // Advance to next step
         state.currentStep++;
@@ -87,7 +96,7 @@ public class WorkflowManager {
         status.put("currentStep", state.currentStep);
         status.put("totalSteps", getTotalSteps(state.scenarioType));
         status.put("progress", calculateProgress(state));
-        status.put("elapsedTime", System.currentTimeMillis() - state.startTime);
+        status.put("elapsedTime", currentTimeSupplier.getAsLong() - state.startTime);
 
         ArrayNode choicesArray = objectMapper.createArrayNode();
         state.userChoices.forEach((step, choice) -> {
@@ -110,7 +119,7 @@ public class WorkflowManager {
             return createErrorResponse("Workflow not found: " + workflowId);
         }
 
-        long duration = System.currentTimeMillis() - state.startTime;
+        long duration = currentTimeSupplier.getAsLong() - state.startTime;
 
         ObjectNode completion = objectMapper.createObjectNode();
         completion.put("workflowId", workflowId);
@@ -138,7 +147,7 @@ public class WorkflowManager {
             workflowInfo.put("workflowId", state.workflowId);
             workflowInfo.put("scenarioType", state.scenarioType);
             workflowInfo.put("currentStep", state.currentStep);
-            workflowInfo.put("elapsedTime", System.currentTimeMillis() - state.startTime);
+            workflowInfo.put("elapsedTime", currentTimeSupplier.getAsLong() - state.startTime);
             workflows.add(workflowInfo);
         });
 
@@ -367,9 +376,9 @@ public class WorkflowManager {
     private int getTotalSteps(String scenarioType) {
         return switch (scenarioType.toLowerCase()) {
             case "retail" -> 4;
-            case "finance" -> 4;
-            case "logistics" -> 4;
-            default -> 3;
+            case "finance" -> 2;
+            case "logistics", "generic" -> 1;
+            default -> 1;
         };
     }
 
@@ -379,7 +388,13 @@ public class WorkflowManager {
     }
 
     private String generateWorkflowId(String userId, String scenarioType) {
-        return String.format("wf_%s_%s_%d", userId, scenarioType, System.currentTimeMillis());
+        return String.format(
+                "wf_%s_%s_%d_%d",
+                userId,
+                scenarioType,
+                currentTimeSupplier.getAsLong(),
+                workflowSequence.incrementAndGet()
+        );
     }
 
     private String generateWorkflowSummary(WorkflowState state) {
