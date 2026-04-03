@@ -141,11 +141,11 @@ DBChat works with virtually any database (as long as it has a JDBC driver)
 ### Step 1: Download DBChat
 
 Download the latest release from [GitHub Releases](https://github.com/skanga/dbchat/releases):
-- [dbchat-4.2.0-basic.jar](https://github.com/skanga/dbchat/releases/download/v4.1.0/dbchat-4.2.0-basic.jar) - Basic version (PostgreSQL, SQLite, H2, HSQLDB, CSV). We recommend that you start here.
-- [dbchat-4.2.0-standard.jar](https://github.com/skanga/dbchat/releases/download/v4.1.0/dbchat-4.2.0-standard.jar) - Standard version (add MySQL, MariaDB, ClickHouse)
-- [dbchat-4.2.0-enterprise.jar](https://github.com/skanga/dbchat/releases/download/v4.1.0/dbchat-4.2.0-enterprise.jar) - Enterprise version (add Oracle, SQL Server, DB2)
-- [dbchat-4.2.0-cloud-analytics.jar](https://github.com/skanga/dbchat/releases/download/v4.1.0/dbchat-4.2.0-cloud-analytics.jar) - Cloud Analytics version (add Redshift, Snowflake, BigQuery)
-- [dbchat-4.2.0-all.jar](https://github.com/skanga/dbchat/releases/download/v4.1.0/dbchat-4.2.0-all.jar) - All databases included (400MB+)
+- [dbchat-4.2.0-basic.jar](https://github.com/skanga/dbchat/releases/download/v4.2.0/dbchat-4.2.0-basic.jar) - Basic version (PostgreSQL, SQLite, H2, HSQLDB, CSV). We recommend that you start here.
+- [dbchat-4.2.0-standard.jar](https://github.com/skanga/dbchat/releases/download/v4.2.0/dbchat-4.2.0-standard.jar) - Standard version (add MySQL, MariaDB, ClickHouse)
+- [dbchat-4.2.0-enterprise.jar](https://github.com/skanga/dbchat/releases/download/v4.2.0/dbchat-4.2.0-enterprise.jar) - Enterprise version (add Oracle, SQL Server, DB2)
+- [dbchat-4.2.0-cloud-analytics.jar](https://github.com/skanga/dbchat/releases/download/v4.2.0/dbchat-4.2.0-cloud-analytics.jar) - Cloud Analytics version (add Redshift, Snowflake, BigQuery)
+- [dbchat-4.2.0-all.jar](https://github.com/skanga/dbchat/releases/download/v4.2.0/dbchat-4.2.0-all.jar) - All databases included (400MB+)
 
 In the examples below, replace `<variant>` with the jar you downloaded, such as `basic`, `standard`, `enterprise`, `cloud-analytics`, or `all`.
 
@@ -242,7 +242,7 @@ DB_DRIVER=com.dbvis.jdbc.redis.RedisDriver
       "command": "java",
       "args": [
         "-jar", 
-        "/absolute/path/to/dbchat-4.1.0-<variant>.jar",
+        "/absolute/path/to/dbchat-4.2.0-<variant>.jar",
         "--config_file=/absolute/path/to/dbchat.conf"
       ]
     }
@@ -256,7 +256,7 @@ DB_DRIVER=com.dbvis.jdbc.redis.RedisDriver
   "mcpServers": {
     "database": {
       "command": "java",
-      "args": ["-jar", "/absolute/path/to/dbchat-4.1.0-<variant>.jar"],
+      "args": ["-jar", "/absolute/path/to/dbchat-4.2.0-<variant>.jar"],
       "env": {
         "DB_URL": "jdbc:mysql://localhost:3306/your_database",
         "DB_USER": "your_username", 
@@ -276,7 +276,7 @@ DB_DRIVER=com.dbvis.jdbc.redis.RedisDriver
       "command": "java",
       "args": [
         "-jar", 
-        "C:/Users/YourName/Downloads/dbchat-4.1.0-<variant>.jar",
+        "C:/Users/YourName/Downloads/dbchat-4.2.0-<variant>.jar",
         "--config_file=C:/Users/YourName/dbchat.conf"
       ]
     }
@@ -293,7 +293,7 @@ You can use many databases concurrently!
   "mcpServers": {
     "production-db": {
       "command": "java",
-      "args": ["-jar", "/path/to/dbchat-4.1.0-<variant>.jar"],
+      "args": ["-jar", "/path/to/dbchat-4.2.0-<variant>.jar"],
       "env": {
         "DB_URL": "jdbc:mysql://prod-server:3306/production",
         "DB_USER": "readonly_user",
@@ -304,7 +304,7 @@ You can use many databases concurrently!
     },
     "analytics-db": {
       "command": "java", 
-      "args": ["-jar", "/path/to/dbchat-4.1.0-<variant>.jar"],
+      "args": ["-jar", "/path/to/dbchat-4.2.0-<variant>.jar"],
       "env": {
         "DB_URL": "jdbc:postgresql://analytics:5432/warehouse",
         "DB_USER": "analyst",
@@ -448,13 +448,13 @@ Then access at `http://localhost:8080/`. For example try `http://localhost:8080/
 For similar config via CLI args use:
 ```
 # Bind to localhost only (default, most secure)
-java -jar dbchat-4.1.0-<variant>.jar --http_mode=true --http_port=8080
+java -jar dbchat-4.2.0-<variant>.jar --http_mode=true --http_port=8080
 
 # Bind to all interfaces (allows external access)
-java -jar dbchat-4.1.0-<variant>.jar --http_mode=true --bind_address=0.0.0.0 --http_port=8080
+java -jar dbchat-4.2.0-<variant>.jar --http_mode=true --bind_address=0.0.0.0 --http_port=8080
 
 # Bind to specific interface
-java -jar dbchat-4.1.0-<variant>.jar --http_mode=true --bind_address=192.168.1.100 --http_port=8080
+java -jar dbchat-4.2.0-<variant>.jar --http_mode=true --bind_address=192.168.1.100 --http_port=8080
 ```
 
 ## 🔧 Configuration Methods and Priority
@@ -477,7 +477,7 @@ This means command line arguments will always override config files, which overr
 **Use case**: Quick overrides, testing, one-time configurations
 
 ```bash
-java -jar dbchat-4.1.0-<variant>.jar \
+java -jar dbchat-4.2.0-<variant>.jar \
   --db_url="jdbc:mysql://localhost:3306/mydb" \
   --db_user="username" \
   --db_password="password" \
@@ -534,7 +534,7 @@ HTTP_PORT=8080
 
 **Usage:**
 ```bash
-java -jar dbchat-4.1.0-<variant>.jar --config_file=dbchat.conf
+java -jar dbchat-4.2.0-<variant>.jar --config_file=dbchat.conf
 ```
 
 **Config file features:**
@@ -557,7 +557,7 @@ export HTTP_MODE="true"
 export HTTP_PORT="8080"
 export SELECT_ONLY="true"
 
-java -jar dbchat-4.1.0-<variant>.jar
+java -jar dbchat-4.2.0-<variant>.jar
 ```
 
 **All environment variables:**
@@ -589,7 +589,7 @@ java -Ddb.url="jdbc:mysql://localhost:3306/mydb" \
      -Ddb.driver="com.mysql.cj.jdbc.Driver" \
      -Dhttp.mode="true" \
      -Dhttp.port="8080" \
-     -jar dbchat-4.1.0-<variant>.jar
+     -jar dbchat-4.2.0-<variant>.jar
 ```
 
 **Property naming**: Environment variable `DB_URL` becomes system property `db.url`
@@ -624,7 +624,7 @@ echo "HTTP_PORT=8080" > config.conf
 export HTTP_PORT=9090
 
 # Command line overrides both
-java -jar dbchat-4.1.0-<variant>.jar --config_file=config.conf --http_port=7070
+java -jar dbchat-4.2.0-<variant>.jar --config_file=config.conf --http_port=7070
 
 # Result: Uses port 7070 (command line wins)
 ```
@@ -640,7 +640,7 @@ echo "SELECT_ONLY=true" >> prod.conf
 export DB_PASSWORD="secure_password"
 
 # Override port via command line (for this run only)
-java -jar dbchat-4.1.0-<variant>.jar --config_file=prod.conf --http_port=9090
+java -jar dbchat-4.2.0-<variant>.jar --config_file=prod.conf --http_port=9090
 ```
 
 #### Example 3: Claude Desktop Configuration
@@ -653,7 +653,7 @@ and provide absolute paths for java, the dbchat jar and (optionally) the dbchat 
     "database": {
       "command": "java",
       "args": [
-        "-jar", "/path/to/dbchat-4.1.0-<variant>.jar",
+        "-jar", "/path/to/dbchat-4.2.0-<variant>.jar",
         "--config_file=/path/to/production.conf",
         "--select_only=true"
       ],
@@ -696,14 +696,14 @@ and provide absolute paths for java, the dbchat jar and (optionally) the dbchat 
 ```bash
 # Good: Use environment variables for passwords
 export DB_PASSWORD="secure_password"
-java -jar dbchat-4.1.0-<variant>.jar --config_file=app.conf
+java -jar dbchat-4.2.0-<variant>.jar --config_file=app.conf
 
 # Good: Use config file with restricted permissions
 chmod 600 secure.conf
-java -jar dbchat-4.1.0-<variant>.jar --config_file=secure.conf
+java -jar dbchat-4.2.0-<variant>.jar --config_file=secure.conf
 
 # Avoid: Passwords in command line (visible in process list)
-java -jar dbchat-4.1.0-<variant>.jar --db_password="visible_password"
+java -jar dbchat-4.2.0-<variant>.jar --db_password="visible_password"
 ```
 
 #### Configuration File Security
@@ -724,7 +724,7 @@ ls -la secure.conf
 #### Check Effective Configuration
 Enable debug logging to see which values are being used:
 ```bash
-java -Dlogging.level.root=DEBUG -jar dbchat-4.1.0-<variant>.jar --config_file=myconfig.conf
+java -Dlogging.level.root=DEBUG -jar dbchat-4.2.0-<variant>.jar --config_file=myconfig.conf
 ```
 
 #### Common Issues
@@ -736,7 +736,7 @@ java -Dlogging.level.root=DEBUG -jar dbchat-4.1.0-<variant>.jar --config_file=my
 #### Validation Commands
 ```bash
 # Test database connection with current config
-java -jar dbchat-4.1.0-<variant>.jar --help
+java -jar dbchat-4.2.0-<variant>.jar --help
 
 # Verify config file syntax
 grep -v "^#" myconfig.conf | grep -v "^$"
