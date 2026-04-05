@@ -76,7 +76,13 @@ We'll create the Luminary Goods schema table by table, populating realistic data
 ### 1.1 Create the customers table
 
 ```
-I need to keep track of our customers. Each customer has a name, email address, the city and country they live in, the date they signed up, and a loyalty tier — either Bronze, Silver, Gold, or Platinum. Can you create a table for this and add 30 realistic customers from the US, UK, Canada, and Australia? Spread the signup dates across 2022 to 2024, and make sure a handful of customers share cities so we can do some geographic grouping later.
+I need to keep track of our customers. Each customer has a name,
+email address, the city and country they live in, the date they
+signed up, and a loyalty tier — either Bronze, Silver, Gold, or
+Platinum. Can you create a table for this and add 30 realistic
+customers from the US, UK, Canada, and Australia? Spread the
+signup dates across 2022 to 2024, and make sure a handful of
+customers share cities so we can do some geographic grouping later.
 ```
 
 > **What's happening:** DBchat translates your plain-English description into `CREATE TABLE` and `INSERT` statements and runs them against H2. You never touch SQL.
@@ -84,23 +90,41 @@ I need to keep track of our customers. Each customer has a name, email address, 
 ### 1.2 Create the products table
 
 ```
-We also need a product catalog. Each product has a name, a category (we sell Electronics, Apparel, Home & Garden, and Sports gear), a price we sell it at, what it costs us to buy, and how many we have in stock. Can you create that table and add about 20 products? Prices should range from around $10 to $500. Leave 3 of the products with zero stock — I want to test some inventory alerts later.
+We also need a product catalog. Each product has a name, a category
+(we sell Electronics, Apparel, Home & Garden, and Sports gear), a
+price we sell it at, what it costs us to buy, and how many we have
+in stock. Can you create that table and add about 20 products?
+Prices should range from around $10 to $500. Leave 3 of the products
+with zero stock — I want to test some inventory alerts later.
 ```
 
 ### 1.3 Create the orders and order_items tables
 
 ```
-Now I need to track customer orders. An order belongs to a customer, has a date, a status (Completed, Shipped, Processing, Cancelled, or Refunded), the city it's shipping to, and a total dollar amount. Each order can contain multiple products, so we also need a line-items table that records which product, how many, and the price at the time of purchase.
+Now I need to track customer orders. An order belongs to a customer,
+has a date, a status (Completed, Shipped, Processing, Cancelled, or
+Refunded), the city it's shipping to, and a total dollar amount.
+Each order can contain multiple products, so we also need a line-items
+table that records which product, how many, and the price at the time
+of purchase.
 
-Please create both tables and fill them with about 120 realistic orders from 2023 and 2024. Most should be Completed or Shipped, with a realistic sprinkling of Cancellations and Refunds. Link them to the customers and products we already created.
+Please create both tables and fill them with about 120 realistic orders
+from 2023 and 2024. Most should be Completed or Shipped, with a
+realistic sprinkling of Cancellations and Refunds. Link them to the
+customers and products we already created.
 ```
 
 ### 1.4 Create a reviews table with an intentional data quality issue
 
 ```
-Last thing — customers can leave reviews on products. Each review has a star rating from 1 to 5, some review text, and the date it was written. Please create that table and add around 50 reviews.
+Last thing — customers can leave reviews on products. Each review
+has a star rating from 1 to 5, some review text, and the date it
+was written. Please create that table and add around 50 reviews.
 
-One thing I want to test later is data quality checking, so intentionally leave the star rating blank on two of the reviews, and add one review that references a customer ID that doesn't actually exist in our system.
+One thing I want to test later is data quality checking, so
+intentionally leave the star rating blank on two of the reviews,
+and add one review that references a customer ID that doesn't
+actually exist in our system.
 ```
 
 ### 1.5 Confirm the full schema
@@ -120,7 +144,9 @@ DBchat knows how to describe the shape of your database, not just its data.
 ### 2.1 Describe the full schema
 
 ```
-Describe the complete schema of this database: all tables, their columns with data types, primary keys, and foreign key relationships. Explain how the tables relate to each other in plain English.
+Describe the complete schema of this database: all tables, their
+columns with data types, primary keys, and foreign key relationships.
+Explain how the tables relate to each other in plain English.
 ```
 
 > **What to notice:** DBchat introspects the JDBC metadata and gives you a human-readable entity-relationship summary. This is the `describe_table` capability under the hood.
@@ -128,7 +154,8 @@ Describe the complete schema of this database: all tables, their columns with da
 ### 2.2 Generate an ERD
 
 ```
-Now that you know the full schema, draw me an entity-relationship diagram showing all the tables and how they connect to each other.
+Now that you know the full schema, draw me an entity-relationship
+diagram showing all the tables and how they connect to each other.
 ```
 
 > **What to notice:** Claude generates a visual ERD as an artifact — boxes for each table, lines showing the foreign-key relationships between them. This is a great way to get a bird's-eye view of any unfamiliar database at a glance.
@@ -136,7 +163,8 @@ Now that you know the full schema, draw me an entity-relationship diagram showin
 ### 2.3 Identify join paths
 
 ```
-If I want to find out which cities generate the most revenue, which tables do I need to join and how?
+If I want to find out which cities generate the most revenue,
+which tables do I need to join and how?
 ```
 
 DBchat will trace the path: `customers → orders` (via `customer_id`), filtering on `city`, summing `total_amount`. It explains the join logic before executing.
@@ -144,7 +172,8 @@ DBchat will trace the path: `customers → orders` (via `customer_id`), filterin
 ### 2.3 Spot potential design issues
 
 ```
-Are there any columns in this schema that look like they might be good candidates for an index? Which queries would benefit most?
+Are there any columns in this schema that look like they might be
+good candidates for an index? Which queries would benefit most?
 ```
 
 ---
@@ -162,31 +191,37 @@ How many customers do we have in each country?
 ### 3.2 Business question with joins
 
 ```
-Who are our top 5 customers by total spend? Show their name, email, loyalty tier, and total amount spent.
+Who are our top 5 customers by total spend? Show their name, email,
+loyalty tier, and total amount spent.
 ```
 
 ### 3.3 Time-based filtering
 
 ```
-How many orders were placed each month in 2024? Show the trend month by month.
+How many orders were placed each month in 2024? Show the trend
+month by month.
 ```
 
 ### 3.4 Status breakdown
 
 ```
-What percentage of orders ended up Cancelled or Refunded? Break it down by year.
+What percentage of orders ended up Cancelled or Refunded?
+Break it down by year.
 ```
 
 ### 3.5 Product performance
 
 ```
-Which 3 product categories generate the most revenue? For each category, also tell me the average order size.
+Which 3 product categories generate the most revenue?
+For each category, also tell me the average order size.
 ```
 
 ### 3.6 A complex multi-step question
 
 ```
-Find customers who signed up in 2022 but placed no orders in 2024. These are our at-risk churners. List their names, emails, and loyalty tiers, sorted by tier descending.
+Find customers who signed up in 2022 but placed no orders in 2024.
+These are our at-risk churners. List their names, emails, and
+loyalty tiers, sorted by tier descending.
 ```
 
 > **Notice:** DBchat handles the multi-table join, the date filtering, and the anti-join (customers with no matching 2024 orders) — all from a single natural language sentence.
@@ -198,7 +233,8 @@ Find customers who signed up in 2022 but placed no orders in 2024. These are our
 ### 4.1 Find missing data
 
 ```
-Check all tables for NULL values in important columns. Which columns have missing data, and how many rows are affected?
+Check all tables for NULL values in important columns.
+Which columns have missing data, and how many rows are affected?
 ```
 
 DBchat should surface the two NULL ratings in `product_reviews`.
@@ -206,7 +242,8 @@ DBchat should surface the two NULL ratings in `product_reviews`.
 ### 4.2 Find orphan records
 
 ```
-Are there any rows in product_reviews where the customer_id doesn't match any customer in the customers table?
+Are there any rows in product_reviews where the customer_id doesn't
+match any customer in the customers table?
 ```
 
 This catches the intentional orphan record from Step 1.4.
@@ -220,13 +257,15 @@ Are there any duplicate email addresses in the customers table?
 ### 4.4 Inventory alert
 
 ```
-Which products are currently out of stock? Are any of those products still being ordered (i.e., do they appear in order_items)?
+Which products are currently out of stock? Are any of those
+products still being ordered (i.e., do they appear in order_items)?
 ```
 
 ### 4.5 Price sanity check
 
 ```
-Are there any products where the unit_price is lower than the cost_price? This would indicate we're selling at a loss.
+Are there any products where the unit_price is lower than the
+cost_price? This would indicate we're selling at a loss.
 ```
 
 ---
@@ -238,7 +277,9 @@ DBchat + Claude Desktop can turn query results into interactive charts without l
 ### 5.1 Monthly revenue line chart
 
 ```
-Query the orders table and create a line chart showing total monthly revenue for 2023 and 2024 on the same chart, so I can compare year-over-year growth.
+Query the orders table and create a line chart showing total monthly
+revenue for 2023 and 2024 on the same chart, so I can compare
+year-over-year growth.
 ```
 
 > **What to notice:** Claude generates an interactive artifact (React/Recharts). Hover over points for exact values.
@@ -246,19 +287,24 @@ Query the orders table and create a line chart showing total monthly revenue for
 ### 5.2 Category revenue bar chart
 
 ```
-Create a horizontal bar chart showing revenue by product category. Sort from highest to lowest. Include the exact revenue figure as a label on each bar.
+Create a horizontal bar chart showing revenue by product category.
+Sort from highest to lowest. Include the exact revenue figure
+as a label on each bar.
 ```
 
 ### 5.3 Order status pie chart
 
 ```
-Make a pie chart of orders broken down by status. Use a professional color scheme.
+Make a pie chart of orders broken down by status.
+Use a professional color scheme.
 ```
 
 ### 5.4 Customer geography
 
 ```
-Create a bar chart showing the number of customers per country, and a separate chart showing average order value per country. Display both side by side.
+Create a bar chart showing the number of customers per country,
+and a separate chart showing average order value per country.
+Display both side by side.
 ```
 
 ### 5.5 Full executive dashboard
@@ -286,7 +332,8 @@ DBchat includes a structured workflow engine that guides you through a business 
 ### 6.1 Start a workflow
 
 ```
-Start a workflow for me. I want to do a retail business analysis of the Luminary Goods data.
+Start a workflow for me. I want to do a retail business analysis
+of the Luminary Goods data.
 ```
 
 > DBchat invokes `start_workflow`, presenting you with an initial business question and a set of choices for where to dig first (e.g., "Revenue trends", "Customer segments", "Product performance").
@@ -316,7 +363,9 @@ As you discover interesting findings, DBchat can capture them into a structured 
 ### 7.1 Record a finding manually
 
 ```
-Save this insight: "Customers in the Gold and Platinum tiers account for 68% of revenue despite being only 22% of our customer base. Priority: High. Category: Customer Segmentation."
+Save this insight: "Customers in the Gold and Platinum tiers account
+for 68% of revenue despite being only 22% of our customer base.
+Priority: High. Category: Customer Segmentation."
 ```
 
 > This uses the `append_insight` tool, which validates, categorizes, and timestamps the finding.
@@ -324,17 +373,22 @@ Save this insight: "Customers in the Gold and Platinum tiers account for 68% of 
 ### 7.2 Ask DBchat to proactively capture insights
 
 ```
-Analyze our order cancellation rate by month. If you find anything noteworthy, save it as an insight automatically.
+Analyze our order cancellation rate by month. If you find anything
+noteworthy, save it as an insight automatically.
 ```
 
 ### 7.3 Add more findings as you explore
 
 ```
-Check whether customers who leave reviews have a higher repeat purchase rate than those who don't. Save any significant finding as a high-priority insight.
+Check whether customers who leave reviews have a higher repeat
+purchase rate than those who don't. Save any significant finding
+as a high-priority insight.
 ```
 
 ```
-Compare the average margin (unit_price - cost_price) across product categories. Save the category with the highest and lowest margins as insights.
+Compare the average margin (unit_price - cost_price) across product
+categories. Save the category with the highest and lowest margins
+as insights.
 ```
 
 ### 7.4 View the insights memo
@@ -388,7 +442,8 @@ Show me all customers.
 ### 8.3 Query timeout behavior
 
 ```
-What would happen if I ran a query that took 60 seconds? How is the timeout configured, and what's the current value?
+What would happen if I ran a query that took 60 seconds?
+How is the timeout configured, and what's the current value?
 ```
 
 DBchat will explain the `QUERY_TIMEOUT_SECONDS` setting and its current default (30 seconds).
@@ -418,7 +473,8 @@ Run the business-intelligence prompt on this database.
 ### 9.3 Run the database analysis prompt
 
 ```
-Run the database-analysis prompt. Treat this as a new database I've inherited and need to understand quickly.
+Run the database-analysis prompt. Treat this as a new database
+I've inherited and need to understand quickly.
 ```
 
 > Produces a full database health report: schema summary, row counts, data quality score, relationship map, and suggested indexes.
@@ -449,7 +505,8 @@ If you want to see DBchat connect to multiple databases simultaneously, add a se
 Then ask:
 
 ```
-I have two databases connected. Compare the schema of luminary-db and luminary-archive. Are the table structures compatible?
+I have two databases connected. Compare the schema of luminary-db
+and luminary-archive. Are the table structures compatible?
 ```
 
 ---

@@ -28,18 +28,18 @@ LIMIT 10;
 
 ### 🗣️ Natural Language Database Queries
 - **Ask questions in plain English**: "How many customers signed up last month?"
-- **Get conversational responses**: The LLM explains the data and provides businessInsights
+- **Get conversational responses**: The LLM explains the data and provides business insights
 - **No SQL knowledge required**: Perfect for business users and analysts
 
 ### 📊 Instant Data Visualizations
 - **Automatic chart creation**: Claude generates beautiful charts from your data
 - **Multiple chart types**: Line charts, bar charts, pie charts, scatter plots, and more
-- **Interactive businessInsights**: Drill down into your data with follow-up questions
+- **Interactive visuals**: Drill down into your data with follow-up questions
 
 ### 🔍 Smart Data Exploration
 - **Database discovery**: "What tables do we have?" "Show me the customer table structure"
 - **Relationship understanding**: The AI model explains how your tables connect
-- **Data quality businessInsights**: Find duplicates, missing data, and anomalies
+- **Data quality improvements**: Find duplicates, missing data, and anomalies
 
 ### 💼 Business Intelligence Made Easy
 - **Executive dashboards**: "Create a sales summary for our board meeting"
@@ -161,7 +161,7 @@ IMPORTANT: Make sure that you are properly LICENSED to use any JDBC driver you i
 
 1. Download [Claude Desktop](https://claude.ai/download) (free)
 2. Sign in with your Claude account
-3. **Important**: The Claude website does not support MCP. For MCP only with Anthropic models you need to use Claude Desktop.
+3. **Important**: The Claude website does not support MCP. For MCP with Anthropic models you need to use Claude Desktop or Claude Code.
 
 ### Step 2 (alternate): 
 
