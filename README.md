@@ -151,7 +151,7 @@ Download the latest release from [GitHub Releases](https://github.com/skanga/dbc
 
 In the examples below, replace `<variant>` with the jar you downloaded, such as `basic`, `standard`, `enterprise`, `cloud-analytics`, or `all`.
 
-For a hands-on walkthrough after setup, see [TUTORIAL.md](TUTORIAL.md). For visualization-focused usage patterns, see [VISUALIZATION.md](VISUALIZATION.md).
+For a hands-on walkthrough after setup, see [TUTORIAL.md](TUTORIAL.md) and if you only want to see the results of a sample TUTORIAL run then see [TUTORIAL-DEMO.html](TUTORIAL-DEMO.html). For visualization-focused usage patterns, see [VISUALIZATION.md](VISUALIZATION.md).
 
 NOTE: Advanced users can also build a custom jar with only the drivers you need. See [INSTALL.md](INSTALL.md) for details.
 
