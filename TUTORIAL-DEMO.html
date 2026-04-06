@@ -4,7 +4,30 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>DBchat Tutorial - H2 in-memory database - Claude</title> 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script> 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <script>
+   // Fallback loader + queue so inline charts run even if the CDN is delayed/blocked
+   (function() {
+     function flush() {
+       var q = window._chartQueue || [];
+       while (q.length) {
+         try { (q.shift())(); } catch (e) { console.error(e); }
+       }
+     }
+     if (!window.Chart) {
+       var s = document.createElement('script');
+       s.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
+       s.onload = flush;
+       document.head.appendChild(s);
+     } else {
+       flush();
+     }
+     window.runChart = function(fn) {
+       if (window.Chart) { fn(); return; }
+       (window._chartQueue = window._chartQueue || []).push(fn);
+     };
+   })();
+  </script> 
   <meta name="description" content="Claude is Anthropic's AI, built for problem solvers. Tackle complex challenges, analyze data, write code, and think through your hardest work.">
   <meta name="apple-itunes-app" content="app-id=6473753684">
   <meta property="og:type" content="website">
@@ -5031,79 +5054,81 @@
                         <canvas id="ordersChart"></canvas> 
                        </div> 
                        <script>
-const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'];
-const totalOrders = [6,7,6,8,7,8,8,7,8,8,7];
-const revenue = [694.93,1214.92,1114.95,1769.90,1079.92,1424.93,1084.93,1394.93,1279.92,1589.91,1779.93];
-const revenueHundreds = revenue.map(v => Math.round(v / 100 * 10) / 10);
+runChart(() => {
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'];
+  const totalOrders = [6,7,6,8,7,8,8,7,8,8,7];
+  const revenue = [694.93,1214.92,1114.95,1769.90,1079.92,1424.93,1084.93,1394.93,1279.92,1589.91,1779.93];
+  const revenueHundreds = revenue.map(v => Math.round(v / 100 * 10) / 10);
 
-new Chart(document.getElementById('ordersChart'), {
-  type: 'bar',
-  data: {
-    labels: months,
-    datasets: [
-      {
-        label: 'Total orders',
-        data: totalOrders,
-        backgroundColor: '#AFA9EC',
-        borderColor: '#534AB7',
-        borderWidth: 1,
-        borderRadius: 4,
-        yAxisID: 'y',
-      },
-      {
-        label: 'Revenue ($00s)',
-        data: revenueHundreds,
-        type: 'line',
-        borderColor: '#1D9E75',
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        pointRadius: 3,
-        pointBackgroundColor: '#1D9E75',
-        tension: 0.3,
-        yAxisID: 'y2',
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => {
-            if (ctx.datasetIndex === 0) return ' Orders: ' + ctx.parsed.y;
-            return ' Revenue: $' + revenue[ctx.dataIndex].toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+  new Chart(document.getElementById('ordersChart'), {
+    type: 'bar',
+    data: {
+      labels: months,
+      datasets: [
+        {
+          label: 'Total orders',
+          data: totalOrders,
+          backgroundColor: '#AFA9EC',
+          borderColor: '#534AB7',
+          borderWidth: 1,
+          borderRadius: 4,
+          yAxisID: 'y',
+        },
+        {
+          label: 'Revenue ($00s)',
+          data: revenueHundreds,
+          type: 'line',
+          borderColor: '#1D9E75',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: '#1D9E75',
+          tension: 0.3,
+          yAxisID: 'y2',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              if (ctx.datasetIndex === 0) return ' Orders: ' + ctx.parsed.y;
+              return ' Revenue: $' + revenue[ctx.dataIndex].toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+            }
           }
         }
-      }
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { autoSkip: false, maxRotation: 0, font: { size: 12 } }
       },
-      y: {
-        position: 'left',
-        title: { display: true, text: 'Orders', font: { size: 11 } },
-        min: 0,
-        max: 12,
-        ticks: { stepSize: 2, font: { size: 11 } },
-        grid: { color: 'rgba(128,128,128,0.1)' }
-      },
-      y2: {
-        position: 'right',
-        title: { display: true, text: 'Revenue ($)', font: { size: 11 } },
-        min: 0,
-        max: 25,
-        ticks: {
-          font: { size: 11 },
-          callback: (v) => '$' + (v * 100).toLocaleString()
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { autoSkip: false, maxRotation: 0, font: { size: 12 } }
         },
-        grid: { display: false }
+        y: {
+          position: 'left',
+          title: { display: true, text: 'Orders', font: { size: 11 } },
+          min: 0,
+          max: 12,
+          ticks: { stepSize: 2, font: { size: 11 } },
+          grid: { color: 'rgba(128,128,128,0.1)' }
+        },
+        y2: {
+          position: 'right',
+          title: { display: true, text: 'Revenue ($)', font: { size: 11 } },
+          min: 0,
+          max: 25,
+          ticks: {
+            font: { size: 11 },
+            callback: (v) => '$' + (v * 100).toLocaleString()
+          },
+          grid: { display: false }
+        }
       }
     }
-  }
+  });
 });
 </script> 
                       </div> 
@@ -5301,6 +5326,7 @@ new Chart(document.getElementById('ordersChart'), {
                         <canvas id="attritionChart"></canvas> 
                        </div> 
                        <script>
+runChart(() => {
 new Chart(document.getElementById('attritionChart'), {
   type: 'bar',
   data: {
@@ -5351,6 +5377,7 @@ new Chart(document.getElementById('attritionChart'), {
       }
     }
   }
+});
 });
 </script> 
                       </div>
@@ -5592,6 +5619,7 @@ new Chart(document.getElementById('attritionChart'), {
                         <canvas id="catChart"></canvas> 
                        </div> 
                        <script>
+runChart(() => {
 new Chart(document.getElementById('catChart'), {
   type: 'bar',
   data: {
@@ -5662,6 +5690,7 @@ new Chart(document.getElementById('catChart'), {
       }
     }
   }
+});
 });
 </script> 
                       </div>
@@ -6913,84 +6942,86 @@ new Chart(document.getElementById('catChart'), {
                    <canvas id="yoyChart"></canvas> 
                   </div> 
                   <script>
-const monthsOfYear = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const data2023 = [409.97,379.98,554.97,609.96,899.96,464.97,339.97,759.96,559.96,804.96,459.97,739.94];
-const data2024 = [694.93,1214.92,1114.95,1769.90,1079.92,1424.93,1084.93,1394.93,1279.92,1589.91,1779.93,null];
+runChart(() => {
+  const monthsOfYear = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const data2023 = [409.97,379.98,554.97,609.96,899.96,464.97,339.97,759.96,559.96,804.96,459.97,739.94];
+  const data2024 = [694.93,1214.92,1114.95,1769.90,1079.92,1424.93,1084.93,1394.93,1279.92,1589.91,1779.93,null];
 
-new Chart(document.getElementById('yoyChart'), {
-  type: 'line',
-  data: {
-    labels: monthsOfYear,
-    datasets: [
-      {
-        label: '2024',
-        data: data2024,
-        borderColor: '#534AB7',
-        backgroundColor: '#534AB715',
-        borderWidth: 2.5,
-        pointRadius: 4,
-        pointBackgroundColor: '#534AB7',
-        pointHoverRadius: 6,
-        tension: 0.3,
-        fill: false,
-        spanGaps: false,
-      },
-      {
-        label: '2023',
-        data: data2023,
-        borderColor: '#B4B2A9',
-        backgroundColor: 'transparent',
-        borderWidth: 2,
-        borderDash: [5, 3],
-        pointRadius: 3,
-        pointBackgroundColor: '#B4B2A9',
-        pointHoverRadius: 5,
-        tension: 0.3,
-        fill: false,
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    interaction: { mode: 'index', intersect: false },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => {
-            if (ctx.parsed.y === null) return ' 2024: no data yet';
-            const v = ctx.parsed.y;
-            const label = ctx.dataset.label;
-            if (label === '2024' && ctx.dataIndex < data2023.length) {
-              const diff = v - data2023[ctx.dataIndex];
-              const pct = ((diff / data2023[ctx.dataIndex]) * 100).toFixed(0);
-              const sign = diff >= 0 ? '+' : '';
-              return [
-                ' 2024: $' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}),
-                ' vs 2023: ' + sign + '$' + diff.toFixed(2) + ' (' + sign + pct + '%)'
-              ];
+  new Chart(document.getElementById('yoyChart'), {
+    type: 'line',
+    data: {
+      labels: monthsOfYear,
+      datasets: [
+        {
+          label: '2024',
+          data: data2024,
+          borderColor: '#534AB7',
+          backgroundColor: '#534AB715',
+          borderWidth: 2.5,
+          pointRadius: 4,
+          pointBackgroundColor: '#534AB7',
+          pointHoverRadius: 6,
+          tension: 0.3,
+          fill: false,
+          spanGaps: false,
+        },
+        {
+          label: '2023',
+          data: data2023,
+          borderColor: '#B4B2A9',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5, 3],
+          pointRadius: 3,
+          pointBackgroundColor: '#B4B2A9',
+          pointHoverRadius: 5,
+          tension: 0.3,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => {
+              if (ctx.parsed.y === null) return ' 2024: no data yet';
+              const v = ctx.parsed.y;
+              const label = ctx.dataset.label;
+              if (label === '2024' && ctx.dataIndex < data2023.length) {
+                const diff = v - data2023[ctx.dataIndex];
+                const pct = ((diff / data2023[ctx.dataIndex]) * 100).toFixed(0);
+                const sign = diff >= 0 ? '+' : '';
+                return [
+                  ' 2024: $' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2}),
+                  ' vs 2023: ' + sign + '$' + diff.toFixed(2) + ' (' + sign + pct + '%)'
+                ];
+              }
+              return ' ' + label + ': $' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
             }
-            return ' ' + label + ': $' + v.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
           }
         }
-      }
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { font: { size: 12 }, autoSkip: false }
       },
-      y: {
-        min: 0,
-        ticks: {
-          font: { size: 11 },
-          callback: (v) => '$' + v.toLocaleString()
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 12 }, autoSkip: false }
         },
-        grid: { color: 'rgba(128,128,128,0.1)' }
+        y: {
+          min: 0,
+          ticks: {
+            font: { size: 11 },
+            callback: (v) => '$' + v.toLocaleString()
+          },
+          grid: { color: 'rgba(128,128,128,0.1)' }
+        }
       }
     }
-  }
+  });
 });
 </script> 
                   <div>
@@ -7155,83 +7186,85 @@ new Chart(document.getElementById('yoyChart'), {
 </div>
 
 <script>
-const data = [
-  { label: 'Completed', value: 86,  pct: 71.7, color: '#2D6A4F' },
-  { label: 'Shipped',   value: 15,  pct: 12.5, color: '#185FA5' },
-  { label: 'Cancelled', value: 11,  pct: 9.2,  color: '#888780' },
-  { label: 'Refunded',  value: 8,   pct: 6.7,  color: '#993C1D' },
-];
+runChart(() => {
+  const data = [
+    { label: 'Completed', value: 86,  pct: 71.7, color: '#2D6A4F' },
+    { label: 'Shipped',   value: 15,  pct: 12.5, color: '#185FA5' },
+    { label: 'Cancelled', value: 11,  pct: 9.2,  color: '#888780' },
+    { label: 'Refunded',  value: 8,   pct: 6.7,  color: '#993C1D' },
+  ];
 
-const chart = new Chart(document.getElementById('pieChart'), {
-  type: 'pie',
-  data: {
-    labels: data.map(d => d.label),
-    datasets: [{
-      data: data.map(d => d.value),
-      backgroundColor: data.map(d => d.color),
-      borderColor: 'var(--color-background-primary)',
-      borderWidth: 3,
-      hoverOffset: 6,
-    }]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    layout: { padding: 80 },
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          label: (ctx) => ' ' + ctx.label + ': ' + ctx.parsed + ' orders (' + data[ctx.dataIndex].pct + '%)'
+  const chart = new Chart(document.getElementById('pieChart'), {
+    type: 'pie',
+    data: {
+      labels: data.map(d => d.label),
+      datasets: [{
+        data: data.map(d => d.value),
+        backgroundColor: data.map(d => d.color),
+        borderColor: 'var(--color-background-primary)',
+        borderWidth: 3,
+        hoverOffset: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      layout: { padding: 80 },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            label: (ctx) => ' ' + ctx.label + ': ' + ctx.parsed + ' orders (' + data[ctx.dataIndex].pct + '%)'
+          }
+        }
+      },
+      animation: {
+        onComplete: function() {
+          const chart = this;
+          const ctx = chart.ctx;
+          const meta = chart.getDatasetMeta(0);
+          const cx = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
+          const cy = chart.chartArea.top  + (chart.chartArea.bottom - chart.chartArea.top)  / 2;
+
+          ctx.save();
+          meta.data.forEach((arc, i) => {
+            const d = data[i];
+            const angle  = (arc.startAngle + arc.endAngle) / 2;
+            const r      = (arc.outerRadius + arc.outerRadius * 1.28) / 2;
+            const tx     = cx + Math.cos(angle) * r;
+            const ty     = cy + Math.sin(angle) * r;
+
+            const labelR  = arc.outerRadius * 1.18;
+            const lineEndR = arc.outerRadius + 6;
+            const lx1 = cx + Math.cos(angle) * lineEndR;
+            const ly1 = cy + Math.sin(angle) * lineEndR;
+            const lx2 = cx + Math.cos(angle) * labelR;
+            const ly2 = cy + Math.sin(angle) * labelR;
+
+            ctx.beginPath();
+            ctx.moveTo(lx1, ly1);
+            ctx.lineTo(lx2, ly2);
+            ctx.strokeStyle = d.color;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            const anchor = Math.cos(angle) > 0 ? 'left' : 'right';
+            const pad = Math.cos(angle) > 0 ? 6 : -6;
+
+            ctx.textAlign = anchor;
+            ctx.font = '500 13px "Anthropic Sans", sans-serif';
+            ctx.fillStyle = d.color;
+            ctx.fillText(d.label, tx + pad, ty - 7);
+
+            ctx.font = '400 12px "Anthropic Sans", sans-serif';
+            ctx.fillStyle = d.color;
+            ctx.fillText(d.pct + '% · ' + d.value + ' orders', tx + pad, ty + 8);
+          });
+          ctx.restore();
         }
       }
-    },
-    animation: {
-      onComplete: function() {
-        const chart = this;
-        const ctx = chart.ctx;
-        const meta = chart.getDatasetMeta(0);
-        const cx = chart.chartArea.left + (chart.chartArea.right - chart.chartArea.left) / 2;
-        const cy = chart.chartArea.top  + (chart.chartArea.bottom - chart.chartArea.top)  / 2;
-
-        ctx.save();
-        meta.data.forEach((arc, i) => {
-          const d = data[i];
-          const angle  = (arc.startAngle + arc.endAngle) / 2;
-          const r      = (arc.outerRadius + arc.outerRadius * 1.28) / 2;
-          const tx     = cx + Math.cos(angle) * r;
-          const ty     = cy + Math.sin(angle) * r;
-
-          const labelR  = arc.outerRadius * 1.18;
-          const lineEndR = arc.outerRadius + 6;
-          const lx1 = cx + Math.cos(angle) * lineEndR;
-          const ly1 = cy + Math.sin(angle) * lineEndR;
-          const lx2 = cx + Math.cos(angle) * labelR;
-          const ly2 = cy + Math.sin(angle) * labelR;
-
-          ctx.beginPath();
-          ctx.moveTo(lx1, ly1);
-          ctx.lineTo(lx2, ly2);
-          ctx.strokeStyle = d.color;
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-
-          const anchor = Math.cos(angle) > 0 ? 'left' : 'right';
-          const pad = Math.cos(angle) > 0 ? 6 : -6;
-
-          ctx.textAlign = anchor;
-          ctx.font = '500 13px "Anthropic Sans", sans-serif';
-          ctx.fillStyle = d.color;
-          ctx.fillText(d.label, tx + pad, ty - 7);
-
-          ctx.font = '400 12px "Anthropic Sans", sans-serif';
-          ctx.fillStyle = d.color;
-          ctx.fillText(d.pct + '% · ' + d.value + ' orders', tx + pad, ty + 8);
-        });
-        ctx.restore();
-      }
     }
-  }
+  });
 });
 </script>
 
@@ -7397,85 +7430,87 @@ const chart = new Chart(document.getElementById('pieChart'), {
 </div>
 
 <script>
-const countries = ['US', 'Canada', 'UK', 'Australia'];
-const colors    = ['#185FA5', '#0F6E56', '#534AB7', '#993C1D'];
-const fills     = ['#B5D4F4', '#9FE1CB', '#AFA9EC', '#F5C4B3'];
+runChart(() => {
+  const countries = ['US', 'Canada', 'UK', 'Australia'];
+  const colors    = ['#185FA5', '#0F6E56', '#534AB7', '#993C1D'];
+  const fills     = ['#B5D4F4', '#9FE1CB', '#AFA9EC', '#F5C4B3'];
 
-const sharedOpts = (yLabel, fmt) => ({
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: {
-      callbacks: {
-        label: (ctx) => ' ' + fmt(ctx.parsed.y)
-      }
-    }
-  },
-  scales: {
-    x: {
-      grid: { display: false },
-      ticks: { font: { size: 12 }, autoSkip: false }
-    },
-    y: {
-      beginAtZero: true,
-      title: { display: true, text: yLabel, font: { size: 11 } },
-      ticks: { font: { size: 11 }, callback: (v) => fmt(v) },
-      grid: { color: 'rgba(128,128,128,0.1)' }
-    }
-  }
-});
-
-new Chart(document.getElementById('custChart'), {
-  type: 'bar',
-  data: {
-    labels: countries,
-    datasets: [{
-      data: [10, 7, 7, 6],
-      backgroundColor: fills,
-      borderColor: colors,
-      borderWidth: 1.5,
-      borderRadius: 4,
-    }]
-  },
-  options: {
-    ...sharedOpts('Customers', (v) => v),
+  const sharedOpts = (yLabel, fmt) => ({
+    responsive: true,
+    maintainAspectRatio: false,
     plugins: {
       legend: { display: false },
-      tooltip: { callbacks: { label: (ctx) => ' ' + ctx.parsed.y + ' customers' } }
-    }
-  }
-});
-
-new Chart(document.getElementById('aovChart'), {
-  type: 'bar',
-  data: {
-    labels: countries,
-    datasets: [{
-      data: [220.40, 200.99, 199.16, 222.84],
-      backgroundColor: fills,
-      borderColor: colors,
-      borderWidth: 1.5,
-      borderRadius: 4,
-    }]
-  },
-  options: {
-    ...sharedOpts('Avg order value ($)', (v) => '$' + Number(v).toFixed(0)),
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ' ' + fmt(ctx.parsed.y)
+        }
+      }
+    },
     scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 12 }, autoSkip: false } },
+      x: {
+        grid: { display: false },
+        ticks: { font: { size: 12 }, autoSkip: false }
+      },
       y: {
-        min: 180,
-        max: 240,
-        title: { display: true, text: 'Avg order value ($)', font: { size: 11 } },
-        ticks: { font: { size: 11 }, callback: (v) => '$' + v },
+        beginAtZero: true,
+        title: { display: true, text: yLabel, font: { size: 11 } },
+        ticks: { font: { size: 11 }, callback: (v) => fmt(v) },
         grid: { color: 'rgba(128,128,128,0.1)' }
       }
-    },
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (ctx) => ' $' + ctx.parsed.y.toFixed(2) + ' avg order' } }
     }
-  }
+  });
+
+  new Chart(document.getElementById('custChart'), {
+    type: 'bar',
+    data: {
+      labels: countries,
+      datasets: [{
+        data: [10, 7, 7, 6],
+        backgroundColor: fills,
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      ...sharedOpts('Customers', (v) => v),
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => ' ' + ctx.parsed.y + ' customers' } }
+      }
+    }
+  });
+
+  new Chart(document.getElementById('aovChart'), {
+    type: 'bar',
+    data: {
+      labels: countries,
+      datasets: [{
+        data: [220.40, 200.99, 199.16, 222.84],
+        backgroundColor: fills,
+        borderColor: colors,
+        borderWidth: 1.5,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      ...sharedOpts('Avg order value ($)', (v) => '$' + Number(v).toFixed(0)),
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 12 }, autoSkip: false } },
+        y: {
+          min: 180,
+          max: 240,
+          title: { display: true, text: 'Avg order value ($)', font: { size: 11 } },
+          ticks: { font: { size: 11 }, callback: (v) => '$' + v },
+          grid: { color: 'rgba(128,128,128,0.1)' }
+        }
+      },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (ctx) => ' $' + ctx.parsed.y.toFixed(2) + ' avg order' } }
+      }
+    }
+  });
 });
 </script>
 
@@ -7732,106 +7767,108 @@ new Chart(document.getElementById('aovChart'), {
 </div>
 
 <script>
-const purple = '#534AB7', purpleLight = '#AFA9EC';
-const teal   = '#0F6E56', tealLight   = '#9FE1CB';
-const amber  = '#854F0B', amberLight  = '#FAC775';
-const gray   = '#5F5E5A', grayLight   = '#D3D1C7';
-const blue   = '#185FA5', blueLight   = '#B5D4F4';
-const coral  = '#993C1D', coralLight  = '#F5C4B3';
+runChart(() => {
+  const purple = '#534AB7', purpleLight = '#AFA9EC';
+  const teal   = '#0F6E56', tealLight   = '#9FE1CB';
+  const amber  = '#854F0B', amberLight  = '#FAC775';
+  const gray   = '#5F5E5A', grayLight   = '#D3D1C7';
+  const blue   = '#185FA5', blueLight   = '#B5D4F4';
+  const coral  = '#993C1D', coralLight  = '#F5C4B3';
 
-new Chart(document.getElementById('lineChart'), {
-  type: 'line',
-  data: {
-    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'],
-    datasets: [{
-      data: [694.93,1214.92,1114.95,1769.90,1079.92,1424.93,1084.93,1394.93,1279.92,1589.91,1779.93],
-      borderColor: purple,
-      backgroundColor: purpleLight + '22',
-      borderWidth: 2,
-      pointRadius: 3,
-      pointBackgroundColor: purple,
-      tension: 0.35,
-      fill: true,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (c) => ' $' + c.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) } }
+  new Chart(document.getElementById('lineChart'), {
+    type: 'line',
+    data: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'],
+      datasets: [{
+        data: [694.93,1214.92,1114.95,1769.90,1079.92,1424.93,1084.93,1394.93,1279.92,1589.91,1779.93],
+        borderColor: purple,
+        backgroundColor: purpleLight + '22',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: purple,
+        tension: 0.35,
+        fill: true,
+      }]
     },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 }, autoSkip: false, maxRotation: 0 } },
-      y: { beginAtZero: false, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: (v) => '$' + (v/1000).toFixed(1) + 'k' } }
-    }
-  }
-});
-
-const pieColors = [teal, blue, gray, coral];
-const pieData   = [{ l:'Completed',v:86 },{ l:'Shipped',v:15 },{ l:'Cancelled',v:11 },{ l:'Refunded',v:8 }];
-const pieChart  = new Chart(document.getElementById('pieChart1'), {
-  type: 'doughnut',
-  data: {
-    labels: pieData.map(d=>d.l),
-    datasets: [{ data: pieData.map(d=>d.v), backgroundColor: pieColors, borderColor: 'var(--color-background-primary)', borderWidth: 3, hoverOffset: 5 }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false, cutout: '62%',
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.parsed + ' orders' } }
-    },
-    animation: {
-      onComplete() {
-        const ctx = this.ctx, meta = this.getDatasetMeta(0);
-        const cx = (this.chartArea.left + this.chartArea.right) / 2;
-        const cy = (this.chartArea.top  + this.chartArea.bottom) / 2;
-        ctx.save();
-        meta.data.forEach((arc, i) => {
-          const angle = (arc.startAngle + arc.endAngle) / 2;
-          const r = arc.outerRadius * 1.22;
-          const tx = cx + Math.cos(angle) * r;
-          const ty = cy + Math.sin(angle) * r;
-          const pct = (pieData[i].v / 120 * 100).toFixed(0);
-          ctx.textAlign = Math.cos(angle) > 0 ? 'left' : 'right';
-          ctx.font = '500 11px sans-serif';
-          ctx.fillStyle = pieColors[i];
-          ctx.fillText(pieData[i].l, tx, ty - 5);
-          ctx.font = '400 10px sans-serif';
-          ctx.fillText(pct + '%', tx, ty + 7);
-        });
-        ctx.restore();
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ' $' + c.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, autoSkip: false, maxRotation: 0 } },
+        y: { beginAtZero: false, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: (v) => '$' + (v/1000).toFixed(1) + 'k' } }
       }
     }
-  }
-});
+  });
 
-const products = ['4K Smart TV 55"','Headphones','Robot Vacuum','Dumbbell Set','Yoga Mat'];
-const prodRevs  = [7999.84, 3399.86, 2399.92, 2399.88, 1424.58];
-new Chart(document.getElementById('barChart'), {
-  type: 'bar',
-  data: {
-    labels: products,
-    datasets: [{
-      data: prodRevs,
-      backgroundColor: [purpleLight, blueLight, tealLight, amberLight, coralLight],
-      borderColor:      [purple,      blue,      teal,      amber,      coral],
-      borderWidth: 1.5,
-      borderRadius: 4,
-    }]
-  },
-  options: {
-    indexAxis: 'y',
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (c) => ' $' + c.parsed.x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) } }
+  const pieColors = [teal, blue, gray, coral];
+  const pieData   = [{ l:'Completed',v:86 },{ l:'Shipped',v:15 },{ l:'Cancelled',v:11 },{ l:'Refunded',v:8 }];
+  const pieChart  = new Chart(document.getElementById('pieChart1'), {
+    type: 'doughnut',
+    data: {
+      labels: pieData.map(d=>d.l),
+      datasets: [{ data: pieData.map(d=>d.v), backgroundColor: pieColors, borderColor: 'var(--color-background-primary)', borderWidth: 3, hoverOffset: 5 }]
     },
-    scales: {
-      x: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: (v) => '$' + (v/1000).toFixed(1)+'k' } },
-      y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '62%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.parsed + ' orders' } }
+      },
+      animation: {
+        onComplete() {
+          const ctx = this.ctx, meta = this.getDatasetMeta(0);
+          const cx = (this.chartArea.left + this.chartArea.right) / 2;
+          const cy = (this.chartArea.top  + this.chartArea.bottom) / 2;
+          ctx.save();
+          meta.data.forEach((arc, i) => {
+            const angle = (arc.startAngle + arc.endAngle) / 2;
+            const r = arc.outerRadius * 1.22;
+            const tx = cx + Math.cos(angle) * r;
+            const ty = cy + Math.sin(angle) * r;
+            const pct = (pieData[i].v / 120 * 100).toFixed(0);
+            ctx.textAlign = Math.cos(angle) > 0 ? 'left' : 'right';
+            ctx.font = '500 11px sans-serif';
+            ctx.fillStyle = pieColors[i];
+            ctx.fillText(pieData[i].l, tx, ty - 5);
+            ctx.font = '400 10px sans-serif';
+            ctx.fillText(pct + '%', tx, ty + 7);
+          });
+          ctx.restore();
+        }
+      }
     }
-  }
+  });
+
+  const products = ['4K Smart TV 55"','Headphones','Robot Vacuum','Dumbbell Set','Yoga Mat'];
+  const prodRevs  = [7999.84, 3399.86, 2399.92, 2399.88, 1424.58];
+  new Chart(document.getElementById('barChart'), {
+    type: 'bar',
+    data: {
+      labels: products,
+      datasets: [{
+        data: prodRevs,
+        backgroundColor: [purpleLight, blueLight, tealLight, amberLight, coralLight],
+        borderColor:      [purple,      blue,      teal,      amber,      coral],
+        borderWidth: 1.5,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ' $' + c.parsed.x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: (v) => '$' + (v/1000).toFixed(1)+'k' } },
+        y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+      }
+    }
+  });
 });
 </script>
 
@@ -8069,86 +8106,81 @@ new Chart(document.getElementById('barChart'), {
 </div>
 
 <script>
-//const purple = '#534AB7', purpleLight = '#AFA9EC';
-//const teal   = '#0F6E56', tealLight   = '#9FE1CB';
-//const amber  = '#854F0B', amberLight  = '#FAC775';
-//const blue   = '#185FA5', blueLight   = '#B5D4F4';
-//const coral  = '#993C1D', coralLight  = '#F5C4B3';
-//const gray   = '#5F5E5A';
-
-new Chart(document.getElementById('lineChart1'), {
-  type: 'line',
-  data: {
-    labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'],
-    datasets: [{
-      data: [694.93,1214.92,1114.95,1769.90,1079.92,1424.93,1084.93,1394.93,1279.92,1589.91,1779.93],
-      borderColor: purple,
-      backgroundColor: purpleLight + '22',
-      borderWidth: 2,
-      pointRadius: 3,
-      pointBackgroundColor: purple,
-      tension: 0.35,
-      fill: true,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (c) => ' $' + c.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) } }
+runChart(() => {
+  new Chart(document.getElementById('lineChart1'), {
+    type: 'line',
+    data: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov'],
+      datasets: [{
+        data: [694.93,1214.92,1114.95,1769.90,1079.92,1424.93,1084.93,1394.93,1279.92,1589.91,1779.93],
+        borderColor: purple,
+        backgroundColor: purpleLight + '22',
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: purple,
+        tension: 0.35,
+        fill: true,
+      }]
     },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 }, autoSkip: false, maxRotation: 0 } },
-      y: { beginAtZero: false, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: (v) => '$' + (v/1000).toFixed(1) + 'k' } }
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ' $' + c.parsed.y.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 }, autoSkip: false, maxRotation: 0 } },
+        y: { beginAtZero: false, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: (v) => '$' + (v/1000).toFixed(1) + 'k' } }
+      }
     }
-  }
-});
+  });
 
-new Chart(document.getElementById('pieChart2'), {
-  type: 'doughnut',
-  data: {
-    labels: ['Completed','Shipped','Cancelled','Refunded'],
-    datasets: [{
-      data: [86, 15, 11, 8],
-      backgroundColor: [teal, blue, gray, coral],
-      borderColor: 'var(--color-background-primary)',
-      borderWidth: 3,
-      hoverOffset: 4,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false, cutout: '60%',
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.parsed + ' orders' } }
-    }
-  }
-});
-
-new Chart(document.getElementById('barChart2'), {
-  type: 'bar',
-  data: {
-    labels: ['4K Smart TV 55"','Headphones','Robot Vacuum','Dumbbell Set','Yoga Mat'],
-    datasets: [{
-      data: [7999.84, 3399.86, 2399.92, 2399.88, 1424.58],
-      backgroundColor: [purpleLight, blueLight, tealLight, amberLight, coralLight],
-      borderColor:      [purple,      blue,      teal,      amber,      coral],
-      borderWidth: 1.5,
-      borderRadius: 4,
-    }]
-  },
-  options: {
-    indexAxis: 'y',
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (c) => ' $' + c.parsed.x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) } }
+  new Chart(document.getElementById('pieChart2'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Completed','Shipped','Cancelled','Refunded'],
+      datasets: [{
+        data: [86, 15, 11, 8],
+        backgroundColor: [teal, blue, gray, coral],
+        borderColor: 'var(--color-background-primary)',
+        borderWidth: 3,
+        hoverOffset: 4,
+      }]
     },
-    scales: {
-      x: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: (v) => '$' + (v/1000).toFixed(1)+'k' } },
-      y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+    options: {
+      responsive: true, maintainAspectRatio: false, cutout: '60%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ' ' + c.label + ': ' + c.parsed + ' orders' } }
+      }
     }
-  }
+  });
+
+  new Chart(document.getElementById('barChart2'), {
+    type: 'bar',
+    data: {
+      labels: ['4K Smart TV 55"','Headphones','Robot Vacuum','Dumbbell Set','Yoga Mat'],
+      datasets: [{
+        data: [7999.84, 3399.86, 2399.92, 2399.88, 1424.58],
+        backgroundColor: [purpleLight, blueLight, tealLight, amberLight, coralLight],
+        borderColor:      [purple,      blue,      teal,      amber,      coral],
+        borderWidth: 1.5,
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ' $' + c.parsed.x.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}) } }
+      },
+      scales: {
+        x: { grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: (v) => '$' + (v/1000).toFixed(1)+'k' } },
+        y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+      }
+    }
+  });
 });
 </script>
 
@@ -8579,38 +8611,39 @@ new Chart(document.getElementById('barChart2'), {
 </div>
 
 <script>
-const tiers  = ['Platinum','Gold','Silver','Bronze'];
-//const fills  = ['#AFA9EC','#FAC775','#D3D1C7','#F5C4B3'];
-const borders= ['#534AB7','#854F0B','#5F5E5A','#993C1D'];
+runChart(() => {
+  const tiers  = ['Platinum','Gold','Silver','Bronze'];
+  const borders= ['#534AB7','#854F0B','#5F5E5A','#993C1D'];
 
-const sharedOpts2 = (label, fmt) => ({
-  responsive: true, maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: { callbacks: { label: (c) => ' ' + fmt(c.parsed.y) } }
-  },
-  scales: {
-    x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-    y: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: fmt } }
-  }
-});
+  const sharedOpts2 = (label, fmt) => ({
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (c) => ' ' + fmt(c.parsed.y) } }
+    },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+      y: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: fmt } }
+    }
+  });
 
-new Chart(document.getElementById('tierSpend'), {
-  type: 'bar',
-  data: {
-    labels: tiers,
-    datasets: [{ data: [1136.95, 889.32, 548.85, 459.34], backgroundColor: fills, borderColor: borders, borderWidth: 1.5, borderRadius: 4 }]
-  },
-  options: sharedOpts2('Avg spend', (v) => '$' + Math.round(v))
-});
+  new Chart(document.getElementById('tierSpend'), {
+    type: 'bar',
+    data: {
+      labels: tiers,
+      datasets: [{ data: [1136.95, 889.32, 548.85, 459.34], backgroundColor: fills, borderColor: borders, borderWidth: 1.5, borderRadius: 4 }]
+    },
+    options: sharedOpts2('Avg spend', (v) => '$' + Math.round(v))
+  });
 
-new Chart(document.getElementById('tierAov'), {
-  type: 'bar',
-  data: {
-    labels: tiers,
-    datasets: [{ data: [295.97, 212.36, 181.47, 152.80], backgroundColor: fills, borderColor: borders, borderWidth: 1.5, borderRadius: 4 }]
-  },
-  options: sharedOpts('Avg AOV', (v) => '$' + Math.round(v))
+  new Chart(document.getElementById('tierAov'), {
+    type: 'bar',
+    data: {
+      labels: tiers,
+      datasets: [{ data: [295.97, 212.36, 181.47, 152.80], backgroundColor: fills, borderColor: borders, borderWidth: 1.5, borderRadius: 4 }]
+    },
+    options: sharedOpts('Avg AOV', (v) => '$' + Math.round(v))
+  });
 });
 </script>
 
@@ -9314,91 +9347,91 @@ new Chart(document.getElementById('tierAov'), {
 </div>
 
 <script>
-//const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+runChart(() => {
+  const rawdata = {
+    2023: {
+      cancel: [0,33.3,0,0,25,0,0,0,25,0,0,20],
+      refund: [0,0,33.3,0,0,0,25,0,0,0,33.3,0]
+    },
+    2024: {
+      cancel: [16.7,0,16.7,12.5,0,12.5,12.5,14.3,0,12.5,0,null],
+      refund: [0,14.3,0,0,14.3,0,12.5,0,12.5,0,14.3,null]
+    }
+  };
 
-const rawdata = {
-  2023: {
-    cancel: [0,33.3,0,0,25,0,0,0,25,0,0,20],
-    refund: [0,0,33.3,0,0,0,25,0,0,0,33.3,0]
-  },
-  2024: {
-    cancel: [16.7,0,16.7,12.5,0,12.5,12.5,14.3,0,12.5,0,null],
-    refund: [0,14.3,0,0,14.3,0,12.5,0,12.5,0,14.3,null]
-  }
-};
-
-new Chart(document.getElementById('attrChart'), {
-  type: 'bar',
-  data: {
-    labels: monthsOfYear,
-    datasets: [
-      {
-        label: '2023 Cancelled',
-        data: rawdata[2023].cancel,
-        backgroundColor: '#D85A3066',
-        borderColor: '#D85A30',
-        borderWidth: 1,
-        borderRadius: 3,
-        stack: '2023',
-      },
-      {
-        label: '2023 Refunded',
-        data: rawdata[2023].refund,
-        backgroundColor: '#F0997B66',
-        borderColor: '#F0997B',
-        borderWidth: 1,
-        borderRadius: 3,
-        stack: '2023',
-      },
-      {
-        label: '2024 Cancelled',
-        data: rawdata[2024].cancel,
-        backgroundColor: '#D85A30',
-        borderColor: '#993C1D',
-        borderWidth: 1,
-        borderRadius: 3,
-        stack: '2024',
-      },
-      {
-        label: '2024 Refunded',
-        data: rawdata[2024].refund,
-        backgroundColor: '#F0997B',
-        borderColor: '#D85A30',
-        borderWidth: 1,
-        borderRadius: 3,
-        stack: '2024',
-      }
-    ]
-  },
-  options: {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        callbacks: {
-          title: (items) => monthsOfYear[items[0].dataIndex],
-          label: (ctx) => {
-            if (!ctx.parsed.y) return null;
-            return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + '%';
+  new Chart(document.getElementById('attrChart'), {
+    type: 'bar',
+    data: {
+      labels: monthsOfYear,
+      datasets: [
+        {
+          label: '2023 Cancelled',
+          data: rawdata[2023].cancel,
+          backgroundColor: '#D85A3066',
+          borderColor: '#D85A30',
+          borderWidth: 1,
+          borderRadius: 3,
+          stack: '2023',
+        },
+        {
+          label: '2023 Refunded',
+          data: rawdata[2023].refund,
+          backgroundColor: '#F0997B66',
+          borderColor: '#F0997B',
+          borderWidth: 1,
+          borderRadius: 3,
+          stack: '2023',
+        },
+        {
+          label: '2024 Cancelled',
+          data: rawdata[2024].cancel,
+          backgroundColor: '#D85A30',
+          borderColor: '#993C1D',
+          borderWidth: 1,
+          borderRadius: 3,
+          stack: '2024',
+        },
+        {
+          label: '2024 Refunded',
+          data: rawdata[2024].refund,
+          backgroundColor: '#F0997B',
+          borderColor: '#D85A30',
+          borderWidth: 1,
+          borderRadius: 3,
+          stack: '2024',
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => monthsOfYear[items[0].dataIndex],
+            label: (ctx) => {
+              if (!ctx.parsed.y) return null;
+              return ' ' + ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(1) + '%';
+            }
           }
         }
-      }
-    },
-    scales: {
-      x: {
-        grid: { display: false },
-        ticks: { font: { size: 11 }, autoSkip: false }
       },
-      y: {
-        stacked: true,
-        max: 45,
-        title: { display: true, text: 'Attrition rate (%)', font: { size: 11 } },
-        ticks: { font: { size: 11 }, callback: (v) => v + '%' },
-        grid: { color: 'rgba(128,128,128,0.1)' }
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: { font: { size: 11 }, autoSkip: false }
+        },
+        y: {
+          stacked: true,
+          max: 45,
+          title: { display: true, text: 'Attrition rate (%)', font: { size: 11 } },
+          ticks: { font: { size: 11 }, callback: (v) => v + '%' },
+          grid: { color: 'rgba(128,128,128,0.1)' }
+        }
       }
     }
-  }
+  });
 });
 </script>
 
@@ -9711,65 +9744,67 @@ new Chart(document.getElementById('attrChart'), {
 </div>
 
 <script>
-new Chart(document.getElementById('spendChart'), {
-  type: 'bar',
-  data: {
-    labels: ['High engagement\n(2+ reviews)', 'Low engagement\n(1 review)'],
-    datasets: [{
-      data: [1475.17, 672.69],
-      backgroundColor: ['#AFA9EC', '#D3D1C7'],
-      borderColor: ['#534AB7', '#888780'],
-      borderWidth: 1.5,
-      borderRadius: 4,
-    }]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (c) => ' $' + c.parsed.y.toLocaleString('en-US', {minimumFractionDigits:2}) } }
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-      y: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: (v) => '$' + v.toLocaleString() } }
-    }
-  }
-});
-
-new Chart(document.getElementById('ordersChart1'), {
-  type: 'bar',
-  data: {
-    labels: ['High engagement', 'Low engagement'],
-    datasets: [
-      {
-        label: 'Total orders',
-        data: [4.11, 3.82],
-        backgroundColor: '#AFA9EC',
-        borderColor: '#534AB7',
+runChart(() => {
+  new Chart(document.getElementById('spendChart'), {
+    type: 'bar',
+    data: {
+      labels: ['High engagement\n(2+ reviews)', 'Low engagement\n(1 review)'],
+      datasets: [{
+        data: [1475.17, 672.69],
+        backgroundColor: ['#AFA9EC', '#D3D1C7'],
+        borderColor: ['#534AB7', '#888780'],
         borderWidth: 1.5,
         borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ' $' + c.parsed.y.toLocaleString('en-US', {minimumFractionDigits:2}) } }
       },
-      {
-        label: 'Valid orders',
-        data: [3.47, 3.18],
-        backgroundColor: '#D3D1C7',
-        borderColor: '#888780',
-        borderWidth: 1.5,
-        borderRadius: 4,
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: (v) => '$' + v.toLocaleString() } }
       }
-    ]
-  },
-  options: {
-    responsive: true, maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: { callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + c.parsed.y.toFixed(2) } }
-    },
-    scales: {
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-      y: { beginAtZero: false, min: 2.5, max: 5, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, stepSize: 0.5 } }
     }
-  }
+  });
+
+  new Chart(document.getElementById('ordersChart1'), {
+    type: 'bar',
+    data: {
+      labels: ['High engagement', 'Low engagement'],
+      datasets: [
+        {
+          label: 'Total orders',
+          data: [4.11, 3.82],
+          backgroundColor: '#AFA9EC',
+          borderColor: '#534AB7',
+          borderWidth: 1.5,
+          borderRadius: 4,
+        },
+        {
+          label: 'Valid orders',
+          data: [3.47, 3.18],
+          backgroundColor: '#D3D1C7',
+          borderColor: '#888780',
+          borderWidth: 1.5,
+          borderRadius: 4,
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: (c) => ' ' + c.dataset.label + ': ' + c.parsed.y.toFixed(2) } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+        y: { beginAtZero: false, min: 2.5, max: 5, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, stepSize: 0.5 } }
+      }
+    }
+  });
 });
 </script>
 
@@ -10081,39 +10116,39 @@ new Chart(document.getElementById('ordersChart1'), {
 </div>
 
 <script>
-const cats    = ['Apparel','Home & Garden','Sports','Electronics'];
-//const fills   = ['#AFA9EC','#9FE1CB','#FAC775','#F5C4B3'];
-//const borders = ['#534AB7','#0F6E56','#854F0B','#993C1D'];
+runChart(() => {
+  const cats    = ['Apparel','Home & Garden','Sports','Electronics'];
 
-const sharedOpts3 = (fmt) => ({
-  responsive: true, maintainAspectRatio: false,
-  plugins: {
-    legend: { display: false },
-    tooltip: { callbacks: { label: (c) => ' ' + fmt(c.parsed.x) } }
-  },
-  indexAxis: 'y',
-  scales: {
-    x: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: fmt } },
-    y: { grid: { display: false }, ticks: { font: { size: 12 } } }
-  }
-});
+  const sharedOpts3 = (fmt) => ({
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: (c) => ' ' + fmt(c.parsed.x) } }
+    },
+    indexAxis: 'y',
+    scales: {
+      x: { beginAtZero: true, grid: { color: 'rgba(128,128,128,0.1)' }, ticks: { font: { size: 11 }, callback: fmt } },
+      y: { grid: { display: false }, ticks: { font: { size: 12 } } }
+    }
+  });
 
-new Chart(document.getElementById('marginPct'), {
-  type: 'bar',
-  data: {
-    labels: cats,
-    datasets: [{ data: [168.6, 137.0, 133.0, 93.7], backgroundColor: fills, borderColor: borders, borderWidth: 1.5, borderRadius: 4 }]
-  },
-  options: { ...sharedOpts3((v) => v + '%'), plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' ' + c.parsed.x.toFixed(1) + '% avg margin' } } } }
-});
+  new Chart(document.getElementById('marginPct'), {
+    type: 'bar',
+    data: {
+      labels: cats,
+      datasets: [{ data: [168.6, 137.0, 133.0, 93.7], backgroundColor: fills, borderColor: borders, borderWidth: 1.5, borderRadius: 4 }]
+    },
+    options: { ...sharedOpts3((v) => v + '%'), plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' ' + c.parsed.x.toFixed(1) + '% avg margin' } } } }
+  });
 
-new Chart(document.getElementById('marginDollar'), {
-  type: 'bar',
-  data: {
-    labels: cats,
-    datasets: [{ data: [44.19, 44.49, 45.69, 86.39], backgroundColor: fills, borderColor: borders, borderWidth: 1.5, borderRadius: 4 }]
-  },
-  options: { ...sharedOpts3((v) => '$' + v), plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' $' + c.parsed.x.toFixed(2) + ' avg margin' } } } }
+  new Chart(document.getElementById('marginDollar'), {
+    type: 'bar',
+    data: {
+      labels: cats,
+      datasets: [{ data: [44.19, 44.49, 45.69, 86.39], backgroundColor: fills, borderColor: borders, borderWidth: 1.5, borderRadius: 4 }]
+    },
+    options: { ...sharedOpts3((v) => '$' + v), plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => ' $' + c.parsed.x.toFixed(2) + ' avg margin' } } } }
+  });
 });
 </script>
 
