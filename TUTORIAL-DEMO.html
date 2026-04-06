@@ -9,8 +9,13 @@
    // Fallback loader + queue so inline charts run even if the CDN is delayed/blocked
    (function() {
      const fallbacks = [
+       'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js',
        'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
-       'https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js'
+       'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js',
+       'https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js',
+       'https://unpkg.com/chart.js@4.4.1/dist/chart.umd.min.js',
+       'https://unpkg.com/chart.js@4.4.1/dist/chart.umd.js',
+       'https://raw.githubusercontent.com/chartjs/Chart.js/v4.4.1/dist/chart.umd.min.js'
      ];
      function flush() {
        var q = window._chartQueue || [];
@@ -24,6 +29,7 @@
          var src = fallbacks.shift();
          var s = document.createElement('script');
          s.src = src;
+         s.async = false;
          s.onload = flush;
          s.onerror = loadNext;
          document.head.appendChild(s);
